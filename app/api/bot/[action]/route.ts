@@ -1,15 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSession } from '@/lib/session'
 import { bridge, BridgeError } from '@/lib/bridge'
-import { gmt, GmtError, type GmtPurchase } from '@/lib/getmytg'
+import { gmt, GmtError } from '@/lib/getmytg'
 
 /**
  * Authenticated API for the browser.
  *
- * Catalog, purchases, verification codes, refunds and bulk orders go
- * DIRECTLY to the GetMyTG API with the site's own key (lib/getmytg.ts).
- * The bot bridge is only used for what lives in the bot's local DB:
- * top-ups and the referral program.
+ * ALL money operations (purchase, bulk, refund-safety, codes) go through
+ * the BOT BRIDGE: the bot atomically debits the balance in its own DB
+ * (402 when insufficient) and buys with its GetMyTG key. The site NEVER
+ * buys accounts with its own key — that would bypass the user's balance.
+ *
+ * The catalog is read from GetMyTG (the bridge has no `countries`
+ * endpoint) with the bot's markup applied, so displayed prices match
+ * what the bot actually charges.
  */
 
 type Handler = (
@@ -17,211 +21,137 @@ type Handler = (
   body: Record<string, unknown>,
 ) => Promise<unknown>
 
-function mapPurchase(p: GmtPurchase) {
-  const isBulk = p.purchase_type === 'BULK'
+/** Tolerant mapper for purchases coming from the bot's local DB. */
+function mapBridgePurchase(p: Record<string, unknown>) {
+  const quantity = Number(p.quantity ?? 1) || 1
+  const type =
+    String(p.type ?? p.purchaseType ?? '').toLowerCase() === 'bulk' ||
+    quantity > 1 ||
+    Boolean(p.archiveUrl)
+      ? 'bulk'
+      : 'single'
   return {
     id: p.id,
-    phoneNumber: p.phone_number,
-    countryName: p.display_name?.ru ?? p.country_code,
-    countryCode: p.country_code,
-    price: p.price?.amount ?? null,
-    status: p.status,
-    createdAt: p.created_at,
-    type: isBulk ? 'bulk' : 'single',
-    archiveUrl: isBulk && p.status === 'SUCCESS' ? `/api/download/${p.id}` : null,
-    code: p.verification?.code ?? null,
-    password: p.verification?.password ?? null,
+    phoneNumber: p.phoneNumber ?? p.phone_number ?? null,
+    countryName: p.countryName ?? p.country_name ?? p.countryCode ?? '',
+    countryCode: p.countryCode ?? p.country_code ?? '',
+    price: p.chargedPrice ?? p.price ?? null,
+    status: p.status ?? '',
+    createdAt: p.createdAt ?? p.created_at ?? null,
+    type,
+    quantity,
+    archiveUrl: typeof p.archiveUrl === 'string' ? p.archiveUrl : null,
+    code: p.verificationCode ?? null,
   }
 }
 
-/**
- * Debit the bot balance if the bridge supports it.
- * Returns true if the debit actually happened.
- * - 402 (insufficient funds) → rethrown, blocks the purchase
- * - 404 / bridge unavailable → tolerated, purchase proceeds
- */
-async function tryDebit(
-  telegramId: number,
-  amount: number,
-  reason: string,
-  externalId: string,
-): Promise<boolean> {
+/** Bot markup so the site shows the same prices the bot charges. */
+async function getMarkupPercent(): Promise<number> {
   try {
-    await bridge.debit(telegramId, amount, reason, externalId)
-    return true
-  } catch (err) {
-    if (err instanceof BridgeError && err.status === 402) throw err
-    return false
+    const s = (await bridge.settings()) as { markupPercent?: unknown }
+    const n = Number(s.markupPercent)
+    return Number.isFinite(n) && n >= 0 ? n : 0
+  } catch {
+    return 0
   }
 }
 
 const handlers: Record<string, Handler> = {
-  // ---- GetMyTG API (site's own key) ----
+  // ---- Catalog (GetMyTG read-only + bot markup) ----
 
   countries: async () => {
-    const items = await gmt.countries()
+    const [items, markup] = await Promise.all([
+      gmt.countries(),
+      getMarkupPercent(),
+    ])
     return {
-      countries: items.map((c) => ({
-        countryCode: c.country_code,
-        name: c.display_name?.ru ?? c.country_code,
-        price: c.price?.amount ?? '0',
-        available:
-          typeof c.available_count === 'number'
-            ? c.available_count
-            : c.available
-              ? 1
-              : 0,
-      })),
+      countries: items.map((c) => {
+        const base = Number(c.price?.amount ?? 0)
+        const price = (base * (1 + markup / 100)).toFixed(2)
+        return {
+          countryCode: c.country_code,
+          name: c.display_name?.ru ?? c.country_code,
+          price,
+          available:
+            typeof c.available_count === 'number'
+              ? c.available_count
+              : c.available
+                ? 1
+                : 0,
+        }
+      }),
     }
   },
 
-  /**
-   * Purchase flow: the account is bought with the SITE's GetMyTG key.
-   * We try to debit the user's balance in the BOT database first, but if
-   * the bot's bridge does not implement the `debit` action yet (404), the
-   * purchase still proceeds — the site API must not depend on it.
-   * Insufficient funds (402) still blocks the purchase.
-   */
+  // ---- Purchases via the BOT (atomic balance debit in bot DB) ----
+
   purchase: async (telegramId, body) => {
-    const countryCode = String(body.countryCode ?? '')
-    const country = (await gmt.countries()).find(
-      (c) => c.country_code === countryCode,
-    )
-    const price = Number(country?.price?.amount ?? 0)
-    if (!country || price <= 0) {
-      throw new GmtError(404, 'Страна недоступна для покупки')
-    }
-
-    // 1. Try to debit the bot balance (optional — see docstring).
-    const debitId = `buy_${telegramId}_${Date.now()}`
-    const debited = await tryDebit(
+    const res = (await bridge.purchase(
       telegramId,
-      price,
-      `Покупка ${countryCode}`,
-      debitId,
-    )
-
-    // 2. Buy via GetMyTG; on failure — refund the debit if it happened.
-    try {
-      const purchase = await gmt.createPurchase(countryCode)
-      return { purchase: mapPurchase(purchase) }
-    } catch (err) {
-      if (debited) {
-        await bridge
-          .credit(telegramId, price, 'refund', `revert_${debitId}`)
-          .catch(() => {})
-      }
-      throw err
+      String(body.countryCode ?? ''),
+    )) as { balance?: unknown; purchase?: Record<string, unknown> }
+    return {
+      balance: res.balance ?? null,
+      purchase: res.purchase ? mapBridgePurchase(res.purchase) : null,
     }
-  },
-
-  history: async () => {
-    const data = await gmt.history(1, 100)
-    return { purchases: (data.items ?? []).map(mapPurchase) }
-  },
-
-  /**
-   * Two-phase code retrieval so PENDING is never shown to the user:
-   *  - body.trigger === true  → fire the code request at GetMyTG ONCE
-   *  - body.trigger === false → only check whether the code has arrived
-   * The client calls trigger once, then polls status for up to 120s.
-   */
-  'request-code': async (_telegramId, body) => {
-    const id = asId(body.purchaseId)
-    const trigger = body.trigger === true
-
-    // 1. If the code is already stored, return it immediately.
-    const existing = await gmt.purchase(id)
-    if (existing.verification?.code) {
-      return {
-        code: existing.verification.code,
-        password: existing.verification.password ?? null,
-        status: 'SUCCESS',
-      }
-    }
-    if (existing.status === 'REFUND' || existing.status === 'ERROR') {
-      return { code: null, status: existing.status }
-    }
-
-    // 2. Trigger code retrieval exactly once (first client call).
-    //    409/429 mean a request is already in progress — that's fine.
-    if (trigger) {
-      try {
-        const res = await gmt.requestCode(id)
-        if (res.purchase?.verification?.code) {
-          return {
-            code: res.purchase.verification.code,
-            password: res.purchase.verification.password ?? null,
-            status: 'SUCCESS',
-          }
-        }
-      } catch (err) {
-        if (!(err instanceof GmtError && (err.status === 409 || err.status === 429))) {
-          throw err
-        }
-      }
-    }
-
-    // 3. Still pending — the client keeps polling for up to 120s.
-    return { code: null, status: 'PENDING' }
   },
 
   'purchase-bulk': async (telegramId, body) => {
-    const countryCode = String(body.countryCode ?? '')
-    const quantity = clampInt(body.quantity, 1, 1000, 1)
-    const country = (await gmt.countries()).find(
-      (c) => c.country_code === countryCode,
-    )
-    const price = Number(country?.price?.amount ?? 0)
-    if (!country || price <= 0) {
-      throw new GmtError(404, 'Страна недоступна для покупки')
-    }
-    const total = Number((price * quantity).toFixed(2))
-
-    const debitId = `bulk_${telegramId}_${Date.now()}`
-    const debited = await tryDebit(
+    const res = (await bridge.purchaseBulk(
       telegramId,
-      total,
-      `Опт ${countryCode} x${quantity}`,
-      debitId,
-    )
-
-    try {
-      const bulk = await gmt.createBulk(countryCode, quantity)
-      return {
-        bulkPurchaseId: bulk.bulk_purchase_id,
-        status: bulk.status,
-        archiveUrl:
-          bulk.status === 'SUCCESS'
-            ? `/api/download/${bulk.bulk_purchase_id}`
-            : null,
-      }
-    } catch (err) {
-      if (debited) {
-        await bridge
-          .credit(telegramId, total, 'refund', `revert_${debitId}`)
-          .catch(() => {})
-      }
-      throw err
+      String(body.countryCode ?? ''),
+      clampInt(body.quantity, 1, 1000, 1),
+    )) as {
+      bulkPurchaseId?: string | number
+      status?: string
+      archiveUrl?: string | null
+      balance?: unknown
     }
-  },
-
-  'bulk-status': async (_telegramId, body) => {
-    const id = asId(body.bulkPurchaseId)
-    const bulk = await gmt.bulkStatus(id)
     return {
-      status: bulk.status,
-      archiveUrl:
-        bulk.status === 'SUCCESS' ? `/api/download/${bulk.bulk_purchase_id}` : null,
+      bulkPurchaseId: res.bulkPurchaseId,
+      status: res.status,
+      archiveUrl: res.archiveUrl ?? null,
+      balance: res.balance ?? null,
     }
   },
 
-  // ---- Bot bridge (bot's local DB only) ----
+  'bulk-status': async (telegramId, body) => {
+    const res = (await bridge.bulkStatus(
+      telegramId,
+      asId(body.bulkPurchaseId),
+    )) as { status?: string; archiveUrl?: string | null }
+    return { status: res.status, archiveUrl: res.archiveUrl ?? null }
+  },
+
+  history: async (telegramId) => {
+    const res = (await bridge.history(telegramId, 100)) as {
+      purchases?: Array<Record<string, unknown>>
+    }
+    return {
+      purchases: (res.purchases ?? []).map(mapBridgePurchase),
+    }
+  },
+
+  /**
+   * Login-code retrieval via the bot (local purchase id). The bot returns
+   * the cached code instantly if it already arrived; otherwise the client
+   * polls every 5–10 s while GetMyTG waits for the code.
+   */
+  'request-code': async (telegramId, body) => {
+    const res = (await bridge.requestCode(
+      telegramId,
+      asId(body.purchaseId),
+    )) as { code?: string | null; status?: string; message?: string | null }
+    return {
+      code: res.code ?? null,
+      status: res.status ?? (res.code ? 'SUCCESS' : 'PENDING'),
+    }
+  },
+
+  // ---- Bot bridge (bot's local DB) ----
 
   settings: () => bridge.settings(),
   referral: (telegramId) => bridge.referral(telegramId),
-  // Top-up creation/status now live in /api/topup/* (site's own Heleket &
-  // CryptoBot keys). The bridge only serves the top-up history from bot DB.
   topups: (telegramId, body) =>
     bridge.topups(telegramId, clampInt(body.limit, 1, 200, 50)),
 }
