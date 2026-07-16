@@ -143,18 +143,10 @@ export function TopupPanel() {
     }
   }
 
-  // On mount: reconcile missed CryptoBot payments (paid while the user was
-  // away) and resume polling for a pending invoice from localStorage.
+  // On mount: resume polling for a pending invoice from localStorage
+  // (the user usually leaves the page to pay in Telegram).
   useEffect(() => {
     cancelled.current = false
-    postJson<{ credited: number }>('/api/topup/reconcile', {})
-      .then((r) => {
-        if (r.credited > 0) {
-          mutate()
-          globalMutate('me')
-        }
-      })
-      .catch(() => {})
     const pending = loadPending()
     if (pending) void pollInvoice(pending)
     return () => {
@@ -164,29 +156,23 @@ export function TopupPanel() {
   }, [])
 
   async function checkNow() {
-    // Manual check: reconcile CryptoBot + re-check pending invoice.
+    // Manual check of the pending invoice. The bot credits idempotently
+    // via topup-status, so re-checking is always safe.
+    const pending = loadPending()
+    if (!pending) {
+      mutate()
+      globalMutate('me')
+      return
+    }
     setBusy(true)
     try {
-      const r = await postJson<{ credited: number }>('/api/topup/reconcile', {})
-      const pending = loadPending()
-      if (pending) {
-        const s = await postJson<{ status: string; amount?: number }>(
-          '/api/topup/status',
-          { provider: pending.provider, externalId: pending.externalId },
-        )
-        if (s.status === 'PAID') {
-          savePending(null)
-          setPay({ phase: 'success', amount: s.amount ?? pending.amount })
-        }
-      }
-      if (r.credited > 0 || pending == null) {
-        setPay((prev) =>
-          prev.phase === 'success'
-            ? prev
-            : r.credited > 0
-              ? { phase: 'success', amount: 0 }
-              : prev,
-        )
+      const s = await postJson<{ status: string; amount?: number }>(
+        '/api/topup/status',
+        { provider: pending.provider, externalId: pending.externalId },
+      )
+      if (s.status === 'PAID') {
+        savePending(null)
+        setPay({ phase: 'success', amount: s.amount ?? pending.amount })
       }
       mutate()
       globalMutate('me')
