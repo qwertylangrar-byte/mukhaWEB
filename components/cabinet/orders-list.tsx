@@ -1,13 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import useSWR from 'swr'
 import {
   AlertCircle,
   Archive,
   Loader2,
   Phone,
-  RotateCcw,
   ShoppingBag,
 } from 'lucide-react'
 import { postBot, formatUsd } from '@/lib/client-api'
@@ -33,7 +31,7 @@ interface HistoryResponse {
 }
 
 export function OrdersList() {
-  const { data, error, isLoading, mutate } = useSWR<HistoryResponse>(
+  const { data, error, isLoading } = useSWR<HistoryResponse>(
     'bot/history',
     () => postBot<HistoryResponse>('history', { limit: 100 }),
     { revalidateOnFocus: false },
@@ -75,43 +73,19 @@ export function OrdersList() {
   return (
     <div className="mt-6 flex flex-col gap-4">
       {purchases.map((p) => (
-        <OrderCard key={String(p.id)} purchase={p} onChanged={() => mutate()} />
+        <OrderCard key={String(p.id)} purchase={p} />
       ))}
     </div>
   )
 }
 
-function OrderCard({
-  purchase,
-  onChanged,
-}: {
-  purchase: Purchase
-  onChanged: () => void
-}) {
-  const [refunding, setRefunding] = useState(false)
-  const [refundMsg, setRefundMsg] = useState<string | null>(null)
-
+function OrderCard({ purchase }: { purchase: Purchase }) {
   const status = String(purchase.status ?? '').toUpperCase()
   const isRefunded = status === 'REFUNDED' || status === 'REFUND'
   const isBulk =
     (purchase.quantity ?? 1) > 1 ||
     String(purchase.type ?? '').toLowerCase() === 'bulk' ||
     Boolean(purchase.archiveUrl)
-
-  async function refund() {
-    if (!window.confirm('Оформить возврат по этой покупке?')) return
-    setRefunding(true)
-    setRefundMsg(null)
-    try {
-      await postBot('refund', { purchaseId: purchase.id })
-      setRefundMsg('Возврат оформлен, средства зачислены на баланс.')
-      onChanged()
-    } catch (err) {
-      setRefundMsg(err instanceof Error ? err.message : 'Не удалось оформить возврат')
-    } finally {
-      setRefunding(false)
-    }
-  }
 
   const created = purchase.createdAt
     ? new Date(purchase.createdAt).toLocaleString('ru-RU', {
@@ -168,25 +142,6 @@ function OrderCard({
         </div>
       </div>
 
-      {!isRefunded && !isBulk ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full bg-transparent"
-            onClick={refund}
-            disabled={refunding}
-          >
-            {refunding ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <RotateCcw className="size-4" />
-            )}
-            Возврат
-          </Button>
-        </div>
-      ) : null}
-
       {isBulk && purchase.archiveUrl ? (
         <div className="mt-4">
           <Button
@@ -204,9 +159,6 @@ function OrderCard({
         </div>
       ) : null}
 
-      {refundMsg ? (
-        <p className="mt-3 text-sm text-muted-foreground">{refundMsg}</p>
-      ) : null}
     </article>
   )
 }

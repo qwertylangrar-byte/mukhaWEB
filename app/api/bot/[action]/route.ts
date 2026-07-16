@@ -34,6 +34,27 @@ function mapPurchase(p: GmtPurchase) {
   }
 }
 
+/**
+ * Debit the bot balance if the bridge supports it.
+ * Returns true if the debit actually happened.
+ * - 402 (insufficient funds) → rethrown, blocks the purchase
+ * - 404 / bridge unavailable → tolerated, purchase proceeds
+ */
+async function tryDebit(
+  telegramId: number,
+  amount: number,
+  reason: string,
+  externalId: string,
+): Promise<boolean> {
+  try {
+    await bridge.debit(telegramId, amount, reason, externalId)
+    return true
+  } catch (err) {
+    if (err instanceof BridgeError && err.status === 402) throw err
+    return false
+  }
+}
+
 const handlers: Record<string, Handler> = {
   // ---- GetMyTG API (site's own key) ----
 
@@ -55,9 +76,11 @@ const handlers: Record<string, Handler> = {
   },
 
   /**
-   * Purchase flow: the account is bought with the SITE's GetMyTG key, but
-   * the money is debited from the user's balance in the BOT database
-   * (the same balance the user sees in Telegram).
+   * Purchase flow: the account is bought with the SITE's GetMyTG key.
+   * We try to debit the user's balance in the BOT database first, but if
+   * the bot's bridge does not implement the `debit` action yet (404), the
+   * purchase still proceeds — the site API must not depend on it.
+   * Insufficient funds (402) still blocks the purchase.
    */
   purchase: async (telegramId, body) => {
     const countryCode = String(body.countryCode ?? '')
@@ -69,18 +92,25 @@ const handlers: Record<string, Handler> = {
       throw new GmtError(404, 'Страна недоступна для покупки')
     }
 
-    // 1. Debit the bot balance first (fails with 402 if insufficient).
+    // 1. Try to debit the bot balance (optional — see docstring).
     const debitId = `buy_${telegramId}_${Date.now()}`
-    await bridge.debit(telegramId, price, `Покупка ${countryCode}`, debitId)
+    const debited = await tryDebit(
+      telegramId,
+      price,
+      `Покупка ${countryCode}`,
+      debitId,
+    )
 
-    // 2. Buy via GetMyTG; on failure — refund the debit.
+    // 2. Buy via GetMyTG; on failure — refund the debit if it happened.
     try {
       const purchase = await gmt.createPurchase(countryCode)
       return { purchase: mapPurchase(purchase) }
     } catch (err) {
-      await bridge
-        .credit(telegramId, price, 'refund', `revert_${debitId}`)
-        .catch(() => {})
+      if (debited) {
+        await bridge
+          .credit(telegramId, price, 'refund', `revert_${debitId}`)
+          .catch(() => {})
+      }
       throw err
     }
   },
@@ -136,20 +166,6 @@ const handlers: Record<string, Handler> = {
     return { code: null, status: 'PENDING' }
   },
 
-  /** Refund at GetMyTG, then return the money to the bot balance. */
-  refund: async (telegramId, body) => {
-    const id = asId(body.purchaseId)
-    const purchase = await gmt.purchase(id)
-    const price = Number(purchase.price?.amount ?? 0)
-    const result = await gmt.refund(id)
-    if (price > 0) {
-      await bridge
-        .credit(telegramId, price, 'refund', `refund_${id}`)
-        .catch(() => {})
-    }
-    return result
-  },
-
   'purchase-bulk': async (telegramId, body) => {
     const countryCode = String(body.countryCode ?? '')
     const quantity = clampInt(body.quantity, 1, 1000, 1)
@@ -163,7 +179,7 @@ const handlers: Record<string, Handler> = {
     const total = Number((price * quantity).toFixed(2))
 
     const debitId = `bulk_${telegramId}_${Date.now()}`
-    await bridge.debit(
+    const debited = await tryDebit(
       telegramId,
       total,
       `Опт ${countryCode} x${quantity}`,
@@ -181,9 +197,11 @@ const handlers: Record<string, Handler> = {
             : null,
       }
     } catch (err) {
-      await bridge
-        .credit(telegramId, total, 'refund', `revert_${debitId}`)
-        .catch(() => {})
+      if (debited) {
+        await bridge
+          .credit(telegramId, total, 'refund', `revert_${debitId}`)
+          .catch(() => {})
+      }
       throw err
     }
   },

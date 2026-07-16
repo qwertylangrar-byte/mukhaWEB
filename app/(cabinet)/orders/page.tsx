@@ -3,7 +3,7 @@ import { OrdersList } from '@/components/cabinet/orders-list'
 
 export const metadata: Metadata = {
   title: 'Мои покупки — MukhaTG',
-  description: 'История покупок Telegram-аккаунтов, получение кодов и архивов.',
+  description: 'История покупок Telegram-аккаунтов и скачивание архивов.',
 }
 
 export default function OrdersPage() {
@@ -11,7 +11,7 @@ export default function OrdersPage() {
     <div className="mx-auto w-full max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight">Мои покупки</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Получайте коды входа, скачивайте архивы и оформляйте возвраты.
+        Вся история ваших покупок. Архивы оптовых заказов можно скачать здесь.
       </p>
       <OrdersList />
     </div>
