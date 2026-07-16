@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { bridge, BridgeError } from '@/lib/bridge'
+import { getFlags } from '@/lib/flags'
 
 /**
  * Top-up creation goes through the BOT's bridge (`/api/bridge/topup`):
@@ -14,6 +15,11 @@ export async function POST(request: Request) {
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+  }
+
+  const flags = await getFlags()
+  if (!flags.topup) {
+    return NextResponse.json({ error: flags.message }, { status: 503 })
   }
 
   let body: { provider?: string; amount?: number }

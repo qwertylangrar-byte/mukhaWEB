@@ -14,10 +14,12 @@ const nav = [
   { href: '/orders', label: 'Покупки' },
   { href: '/topup', label: 'Пополнение' },
   { href: '/referral', label: 'Рефералы' },
+  { href: '/about', label: 'О нас' },
 ]
 
 interface MeResponse {
   user: { balance?: string } | null
+  isAdmin?: boolean
 }
 
 async function fetchMe(): Promise<MeResponse> {
@@ -66,6 +68,19 @@ export function CabinetHeader({
                 {item.label}
               </Link>
             ))}
+            {data?.isAdmin ? (
+              <Link
+                href="/admin"
+                className={cn(
+                  'rounded-full px-3.5 py-1.5 text-sm transition-colors',
+                  pathname.startsWith('/admin')
+                    ? 'bg-primary font-medium text-primary-foreground shadow-[0_0_16px_-4px] shadow-primary/60'
+                    : 'text-[var(--warning,theme(colors.amber.400))] hover:bg-white/[0.06]',
+                )}
+              >
+                Админ
+              </Link>
+            ) : null}
           </nav>
         </div>
 
@@ -115,6 +130,19 @@ export function CabinetHeader({
             {item.label}
           </Link>
         ))}
+        {data?.isAdmin ? (
+          <Link
+            href="/admin"
+            className={cn(
+              'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm',
+              pathname.startsWith('/admin')
+                ? 'bg-primary/15 font-medium text-primary'
+                : 'text-muted-foreground',
+            )}
+          >
+            Админ
+          </Link>
+        ) : null}
       </nav>
     </header>
   )

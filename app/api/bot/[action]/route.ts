@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getSession } from '@/lib/session'
 import { bridge, BridgeError } from '@/lib/bridge'
 import { gmt, GmtError } from '@/lib/getmytg'
+import { assertFeatureEnabled } from '@/lib/flags'
 
 /**
  * Authenticated API for the browser.
@@ -90,6 +91,7 @@ const handlers: Record<string, Handler> = {
   // ---- Purchases via the BOT (atomic balance debit in bot DB) ----
 
   purchase: async (telegramId, body) => {
+    await assertFeatureEnabled('purchases')
     const res = (await bridge.purchase(
       telegramId,
       String(body.countryCode ?? ''),
@@ -101,6 +103,7 @@ const handlers: Record<string, Handler> = {
   },
 
   'purchase-bulk': async (telegramId, body) => {
+    await assertFeatureEnabled('bulk')
     const res = (await bridge.purchaseBulk(
       telegramId,
       String(body.countryCode ?? ''),
@@ -142,6 +145,7 @@ const handlers: Record<string, Handler> = {
    * polls every 5–10 s while GetMyTG waits for the code.
    */
   'request-code': async (telegramId, body) => {
+    await assertFeatureEnabled('codes')
     const res = (await bridge.requestCode(
       telegramId,
       asId(body.purchaseId),
@@ -205,6 +209,13 @@ export async function POST(
   } catch (err) {
     if (err instanceof GmtError || err instanceof BridgeError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    // Feature-block errors carry a status (503) and an admin-defined message
+    if (err instanceof Error && 'status' in err) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: Number((err as { status?: number }).status) || 500 },
+      )
     }
     return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 })
   }
