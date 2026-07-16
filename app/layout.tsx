@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { cookies, headers } from 'next/headers'
 import { LanguageProvider } from '@/lib/i18n'
 import { LANG_COOKIE, type Lang } from '@/lib/lang'
+import { FloatingBotButton } from '@/components/floating-bot-button'
 import './globals.css'
 
 const _inter = Inter({ subsets: ['latin', 'cyrillic'] })
@@ -47,6 +48,7 @@ export default async function RootLayout({
     <html lang={lang} className="bg-background">
       <body className="font-sans antialiased">
         <LanguageProvider initialLang={lang}>{children}</LanguageProvider>
+        <FloatingBotButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
