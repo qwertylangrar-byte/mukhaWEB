@@ -1,13 +1,11 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import useSWR from 'swr'
+import useSWR, { mutate as globalMutate } from 'swr'
 import {
   AlertCircle,
   ArrowUpRight,
-  Bitcoin,
   CheckCircle2,
-  CreditCard,
   Loader2,
   Wallet,
 } from 'lucide-react'
@@ -15,19 +13,29 @@ import { postBot, formatUsd } from '@/lib/client-api'
 import { Button } from '@/components/ui/button'
 
 const PROVIDERS = [
-  { id: 'cryptobot', name: 'CryptoBot', desc: 'USDT, TON, BTC и другие', icon: Bitcoin },
-  { id: 'card', name: 'Банковская карта', desc: 'Visa / Mastercard / МИР', icon: CreditCard },
+  {
+    id: 'heleket',
+    name: 'Heleket',
+    desc: 'USDT, BTC, ETH, TON и 100+ монет',
+    mark: 'H',
+  },
+  {
+    id: 'cryptobot',
+    name: 'CryptoBot',
+    desc: 'Оплата внутри Telegram',
+    mark: 'CB',
+  },
 ] as const
 
 const PRESETS = [5, 10, 25, 50, 100]
 
-const PAY_POLL_TOTAL_MS = 300_000
+const PAY_POLL_TOTAL_MS = 600_000
 const PAY_POLL_INTERVAL_MS = 5_000
 
 type PayState =
   | { phase: 'idle' }
   | { phase: 'waiting'; url: string | null }
-  | { phase: 'success' }
+  | { phase: 'success'; amount: number }
   | { phase: 'error'; message: string }
 
 interface Topup {
@@ -38,8 +46,19 @@ interface Topup {
   createdAt?: string | null
 }
 
+async function postJson<T>(url: string, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string }
+  if (!res.ok) throw new Error(data.error || 'Ошибка запроса')
+  return data
+}
+
 export function TopupPanel() {
-  const [provider, setProvider] = useState<string>('cryptobot')
+  const [provider, setProvider] = useState<string>('heleket')
   const [amount, setAmount] = useState<number>(10)
   const [busy, setBusy] = useState(false)
   const [pay, setPay] = useState<PayState>({ phase: 'idle' })
@@ -53,55 +72,50 @@ export function TopupPanel() {
   const topups = topupsData?.topups ?? []
 
   async function createTopup() {
-    if (amount <= 0) return
+    if (amount < 1) return
     setBusy(true)
     setPay({ phase: 'idle' })
     cancelled.current = false
     try {
-      const res = await postBot<{
-        topupId?: string | number
-        paymentUrl?: string | null
-        url?: string | null
-        status?: string
-      }>('topup', { provider, amount })
+      const inv = await postJson<{
+        provider: string
+        externalId: string
+        url: string
+      }>('/api/topup/create', { provider, amount })
 
-      const url = res.paymentUrl ?? res.url ?? null
-      if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer')
-      }
-      setPay({ phase: 'waiting', url })
+      window.open(inv.url, '_blank', 'noopener,noreferrer')
+      setPay({ phase: 'waiting', url: inv.url })
 
-      // Poll payment status
-      const id = res.topupId
-      if (id != null) {
-        const deadline = Date.now() + PAY_POLL_TOTAL_MS
-        while (Date.now() < deadline && !cancelled.current) {
-          await new Promise((r) => setTimeout(r, PAY_POLL_INTERVAL_MS))
-          try {
-            const s = await postBot<{ status?: string }>('topup-status', {
-              topupId: id,
-            })
-            const st = String(s.status ?? '').toUpperCase()
-            if (st === 'SUCCESS' || st === 'PAID' || st === 'COMPLETED') {
-              setPay({ phase: 'success' })
-              mutate()
-              return
-            }
-            if (st === 'FAILED' || st === 'CANCELLED' || st === 'EXPIRED') {
-              setPay({ phase: 'error', message: 'Платёж не был завершён.' })
-              return
-            }
-          } catch {
-            // transient errors tolerated
+      // Poll the provider until paid; crediting to the bot DB happens
+      // server-side (webhook + this polling, both idempotent).
+      const deadline = Date.now() + PAY_POLL_TOTAL_MS
+      while (Date.now() < deadline && !cancelled.current) {
+        await new Promise((r) => setTimeout(r, PAY_POLL_INTERVAL_MS))
+        try {
+          const s = await postJson<{ status: string; amount?: number }>(
+            '/api/topup/status',
+            { provider: inv.provider, externalId: inv.externalId },
+          )
+          if (s.status === 'PAID') {
+            setPay({ phase: 'success', amount: s.amount ?? amount })
+            mutate()
+            globalMutate('me')
+            return
           }
+          if (s.status === 'FAILED') {
+            setPay({ phase: 'error', message: 'Платёж не был завершён.' })
+            return
+          }
+        } catch {
+          // transient errors tolerated
         }
-        if (!cancelled.current) {
-          setPay({
-            phase: 'error',
-            message:
-              'Не дождались подтверждения оплаты. Если вы оплатили — баланс зачислится автоматически.',
-          })
-        }
+      }
+      if (!cancelled.current) {
+        setPay({
+          phase: 'error',
+          message:
+            'Не дождались подтверждения оплаты. Если вы оплатили — баланс зачислится автоматически.',
+        })
       }
     } catch (err) {
       setPay({
@@ -119,7 +133,6 @@ export function TopupPanel() {
         <h2 className="text-sm font-semibold text-muted-foreground">Способ оплаты</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {PROVIDERS.map((p) => {
-            const Icon = p.icon
             const active = provider === p.id
             return (
               <button
@@ -136,11 +149,13 @@ export function TopupPanel() {
               >
                 <span
                   className={
-                    'flex size-10 items-center justify-center rounded-xl ' +
-                    (active ? 'bg-primary text-primary-foreground' : 'bg-primary/12 text-primary')
+                    'flex size-10 items-center justify-center rounded-xl text-sm font-bold ' +
+                    (active
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-primary/12 text-primary')
                   }
                 >
-                  <Icon className="size-5" />
+                  {p.mark}
                 </span>
                 <span>
                   <span className="block font-medium">{p.name}</span>
@@ -191,13 +206,15 @@ export function TopupPanel() {
             <div className="flex-1">
               <p className="text-sm font-medium">Ожидаем оплату…</p>
               <p className="text-xs text-muted-foreground">
-                Завершите платёж в открывшемся окне. Баланс обновится автоматически.
+                Завершите платёж в открывшемся окне. Баланс в боте и на сайте
+                обновится автоматически.
               </p>
             </div>
             {pay.url ? (
               <Button
                 variant="outline"
                 size="sm"
+                nativeButton={false}
                 className="rounded-full bg-transparent"
                 render={
                   <a href={pay.url} target="_blank" rel="noopener noreferrer">
@@ -213,7 +230,7 @@ export function TopupPanel() {
         {pay.phase === 'success' ? (
           <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-3 text-sm">
             <CheckCircle2 className="size-5 text-[var(--success)]" />
-            Оплата получена — баланс пополнен.
+            Оплата получена — {formatUsd(pay.amount)} зачислено на баланс.
           </div>
         ) : null}
 
@@ -227,7 +244,7 @@ export function TopupPanel() {
         <Button
           className="mt-5 h-11 w-full rounded-full"
           onClick={createTopup}
-          disabled={busy || amount <= 0}
+          disabled={busy || amount < 1}
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
           {busy ? 'Создаём платёж…' : `Пополнить на ${formatUsd(amount)}`}

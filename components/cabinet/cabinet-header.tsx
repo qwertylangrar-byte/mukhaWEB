@@ -44,11 +44,14 @@ export function CabinetHeader({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[oklch(0.13_0.042_265/0.75)] shadow-[0_8px_32px_-16px_rgba(0,0,0,0.8)] backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
         <div className="flex items-center gap-6">
           <Logo href="/shop" />
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Разделы">
+          <nav
+            className="hidden items-center gap-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] p-1 md:flex"
+            aria-label="Разделы"
+          >
             {nav.map((item) => (
               <Link
                 key={item.href}
@@ -56,8 +59,8 @@ export function CabinetHeader({
                 className={cn(
                   'rounded-full px-3.5 py-1.5 text-sm transition-colors',
                   pathname.startsWith(item.href)
-                    ? 'bg-primary/15 font-medium text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    ? 'bg-primary font-medium text-primary-foreground shadow-[0_0_16px_-4px] shadow-primary/60'
+                    : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground',
                 )}
               >
                 {item.label}
@@ -69,13 +72,13 @@ export function CabinetHeader({
         <div className="flex items-center gap-2">
           <Link
             href="/topup"
-            className="flex items-center gap-2 rounded-full border border-border bg-card/70 py-1.5 pl-3.5 pr-1.5 text-sm transition-colors hover:border-primary/40"
+            className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] py-1.5 pl-3.5 pr-1.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors hover:border-primary/50 hover:bg-primary/10"
           >
             <Wallet className="size-4 text-primary" />
             <span className="font-semibold tabular-nums">
               {data?.user ? formatUsd(data.user.balance) : '—'}
             </span>
-            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_12px_-2px] shadow-primary/60">
               <Plus className="size-3.5" />
             </span>
           </Link>

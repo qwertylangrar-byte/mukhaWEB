@@ -49,29 +49,29 @@
 
 :root {
   color-scheme: dark;
-  /* Deep navy blue background */
-  --background: oklch(0.16 0.045 262);
+  /* Deeper, darker navy background */
+  --background: oklch(0.13 0.042 265);
   --foreground: oklch(0.96 0.01 250);
   /* Slightly lighter navy cards */
-  --card: oklch(0.2 0.05 262);
+  --card: oklch(0.17 0.048 264);
   --card-foreground: oklch(0.96 0.01 250);
-  --popover: oklch(0.2 0.05 262);
+  --popover: oklch(0.17 0.048 264);
   --popover-foreground: oklch(0.96 0.01 250);
   /* Telegram blue */
-  --primary: oklch(0.65 0.17 252);
+  --primary: oklch(0.66 0.16 248);
   --primary-foreground: oklch(0.98 0.01 250);
-  --secondary: oklch(0.26 0.05 262);
+  --secondary: oklch(0.23 0.05 263);
   --secondary-foreground: oklch(0.93 0.01 250);
-  --muted: oklch(0.24 0.045 262);
-  --muted-foreground: oklch(0.68 0.03 255);
-  --accent: oklch(0.28 0.06 258);
+  --muted: oklch(0.21 0.045 263);
+  --muted-foreground: oklch(0.66 0.03 255);
+  --accent: oklch(0.25 0.06 259);
   --accent-foreground: oklch(0.95 0.01 250);
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(0.98 0.01 250);
   --success: oklch(0.72 0.17 155);
-  --border: oklch(0.65 0.1 255 / 16%);
-  --input: oklch(0.65 0.1 255 / 22%);
-  --ring: oklch(0.65 0.17 252);
+  --border: oklch(0.68 0.1 255 / 14%);
+  --input: oklch(0.68 0.1 255 / 20%);
+  --ring: oklch(0.66 0.16 248);
   --chart-1: oklch(0.65 0.17 252);
   --chart-2: oklch(0.72 0.12 210);
   --chart-3: oklch(0.55 0.14 265);
@@ -97,5 +97,13 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Subtle deep-blue ambient glow at the top of every page */
+    background-image:
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        oklch(0.35 0.1 255 / 35%),
+        transparent 70%
+      );
+    background-repeat: no-repeat;
   }
 }

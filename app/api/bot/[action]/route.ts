@@ -54,9 +54,35 @@ const handlers: Record<string, Handler> = {
     }
   },
 
-  purchase: async (_telegramId, body) => {
-    const purchase = await gmt.createPurchase(String(body.countryCode ?? ''))
-    return { purchase: mapPurchase(purchase) }
+  /**
+   * Purchase flow: the account is bought with the SITE's GetMyTG key, but
+   * the money is debited from the user's balance in the BOT database
+   * (the same balance the user sees in Telegram).
+   */
+  purchase: async (telegramId, body) => {
+    const countryCode = String(body.countryCode ?? '')
+    const country = (await gmt.countries()).find(
+      (c) => c.country_code === countryCode,
+    )
+    const price = Number(country?.price?.amount ?? 0)
+    if (!country || price <= 0) {
+      throw new GmtError(404, 'Страна недоступна для покупки')
+    }
+
+    // 1. Debit the bot balance first (fails with 402 if insufficient).
+    const debitId = `buy_${telegramId}_${Date.now()}`
+    await bridge.debit(telegramId, price, `Покупка ${countryCode}`, debitId)
+
+    // 2. Buy via GetMyTG; on failure — refund the debit.
+    try {
+      const purchase = await gmt.createPurchase(countryCode)
+      return { purchase: mapPurchase(purchase) }
+    } catch (err) {
+      await bridge
+        .credit(telegramId, price, 'refund', `revert_${debitId}`)
+        .catch(() => {})
+      throw err
+    }
   },
 
   history: async () => {
@@ -110,22 +136,55 @@ const handlers: Record<string, Handler> = {
     return { code: null, status: 'PENDING' }
   },
 
-  refund: async (_telegramId, body) => {
-    return await gmt.refund(asId(body.purchaseId))
+  /** Refund at GetMyTG, then return the money to the bot balance. */
+  refund: async (telegramId, body) => {
+    const id = asId(body.purchaseId)
+    const purchase = await gmt.purchase(id)
+    const price = Number(purchase.price?.amount ?? 0)
+    const result = await gmt.refund(id)
+    if (price > 0) {
+      await bridge
+        .credit(telegramId, price, 'refund', `refund_${id}`)
+        .catch(() => {})
+    }
+    return result
   },
 
-  'purchase-bulk': async (_telegramId, body) => {
-    const bulk = await gmt.createBulk(
-      String(body.countryCode ?? ''),
-      clampInt(body.quantity, 1, 1000, 1),
+  'purchase-bulk': async (telegramId, body) => {
+    const countryCode = String(body.countryCode ?? '')
+    const quantity = clampInt(body.quantity, 1, 1000, 1)
+    const country = (await gmt.countries()).find(
+      (c) => c.country_code === countryCode,
     )
-    return {
-      bulkPurchaseId: bulk.bulk_purchase_id,
-      status: bulk.status,
-      archiveUrl:
-        bulk.status === 'SUCCESS'
-          ? `/api/download/${bulk.bulk_purchase_id}`
-          : null,
+    const price = Number(country?.price?.amount ?? 0)
+    if (!country || price <= 0) {
+      throw new GmtError(404, 'Страна недоступна для покупки')
+    }
+    const total = Number((price * quantity).toFixed(2))
+
+    const debitId = `bulk_${telegramId}_${Date.now()}`
+    await bridge.debit(
+      telegramId,
+      total,
+      `Опт ${countryCode} x${quantity}`,
+      debitId,
+    )
+
+    try {
+      const bulk = await gmt.createBulk(countryCode, quantity)
+      return {
+        bulkPurchaseId: bulk.bulk_purchase_id,
+        status: bulk.status,
+        archiveUrl:
+          bulk.status === 'SUCCESS'
+            ? `/api/download/${bulk.bulk_purchase_id}`
+            : null,
+      }
+    } catch (err) {
+      await bridge
+        .credit(telegramId, total, 'refund', `revert_${debitId}`)
+        .catch(() => {})
+      throw err
     }
   },
 
@@ -143,14 +202,8 @@ const handlers: Record<string, Handler> = {
 
   settings: () => bridge.settings(),
   referral: (telegramId) => bridge.referral(telegramId),
-  topup: (telegramId, body) =>
-    bridge.topup(
-      telegramId,
-      String(body.provider ?? ''),
-      Number(body.amount ?? 0),
-    ),
-  'topup-status': (telegramId, body) =>
-    bridge.topupStatus(telegramId, asId(body.topupId)),
+  // Top-up creation/status now live in /api/topup/* (site's own Heleket &
+  // CryptoBot keys). The bridge only serves the top-up history from bot DB.
   topups: (telegramId, body) =>
     bridge.topups(telegramId, clampInt(body.limit, 1, 200, 50)),
 }

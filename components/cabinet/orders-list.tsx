@@ -14,6 +14,7 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 import { postBot, formatUsd } from '@/lib/client-api'
+import { Flag } from '@/components/flag'
 import { Button } from '@/components/ui/button'
 
 interface Purchase {
@@ -239,9 +240,13 @@ function OrderCard({
     <article className="rounded-3xl border border-border/70 bg-card/80 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
-            {isBulk ? <Archive className="size-5" /> : <Phone className="size-5" />}
-          </span>
+          {!isBulk && purchase.countryCode ? (
+            <Flag code={purchase.countryCode} className="h-7 w-10" />
+          ) : (
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              {isBulk ? <Archive className="size-5" /> : <Phone className="size-5" />}
+            </span>
+          )}
           <div>
             <p className="font-semibold">
               {isBulk

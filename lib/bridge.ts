@@ -100,4 +100,26 @@ export const bridge = {
     bridgeFetch('topup-status', { telegramId, topupId }),
   topups: (telegramId: number, limit = 50) =>
     bridgeFetch('topups', { telegramId, limit }),
+  /**
+   * Credit the user's balance in the BOT database after a payment made on
+   * the site (Heleket / CryptoBot). `externalId` (provider invoice id) makes
+   * the operation idempotent — the bot must ignore duplicates.
+   */
+  credit: (
+    telegramId: number,
+    amount: number,
+    provider: string,
+    externalId: string,
+  ) => bridgeFetch('credit', { telegramId, amount, provider, externalId }, 30000),
+  /**
+   * Debit the user's balance in the BOT database before a purchase made on
+   * the site. The bot must fail with 402 if the balance is insufficient.
+   * `externalId` makes the operation idempotent.
+   */
+  debit: (
+    telegramId: number,
+    amount: number,
+    reason: string,
+    externalId: string,
+  ) => bridgeFetch('debit', { telegramId, amount, reason, externalId }, 30000),
 }

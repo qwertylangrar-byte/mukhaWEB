@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import useSWR, { mutate } from 'swr'
 import { AlertCircle, Loader2, Search } from 'lucide-react'
-import { postBot, swrPost, formatUsd } from '@/lib/client-api'
+import { swrPost, formatUsd } from '@/lib/client-api'
+import { Flag } from '@/components/flag'
 import { PurchaseDialog, type Country } from '@/components/cabinet/purchase-dialog'
 
 interface CountriesResponse {
@@ -19,14 +20,6 @@ function normalizeCountry(raw: Record<string, unknown>): Country | null {
     price: String(raw.price ?? raw.displayPrice ?? '0'),
     available: Number(raw.available ?? raw.count ?? raw.quantity ?? 0),
   }
-}
-
-export function flagEmoji(code: string): string {
-  const cc = code.trim().toUpperCase()
-  if (!/^[A-Z]{2}$/.test(cc)) return ''
-  return String.fromCodePoint(
-    ...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
-  )
 }
 
 export function ShopCatalog() {
@@ -88,12 +81,10 @@ export function ShopCatalog() {
                 type="button"
                 onClick={() => inStock && setSelected(c)}
                 disabled={!inStock}
-                className="group flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/60 p-5 text-left transition-colors enabled:hover:border-primary/40 enabled:hover:bg-card disabled:opacity-50"
+                className="group flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/70 p-5 text-left shadow-[0_4px_24px_-12px_rgba(0,0,0,0.7)] transition-all enabled:hover:-translate-y-0.5 enabled:hover:border-primary/50 enabled:hover:bg-card enabled:hover:shadow-[0_8px_32px_-12px] enabled:hover:shadow-primary/25 disabled:opacity-50"
               >
                 <span className="flex items-center gap-3">
-                  <span className="text-2xl" aria-hidden="true">
-                    {flagEmoji(c.code) || c.code}
-                  </span>
+                  <Flag code={c.code} className="h-7 w-10" />
                   <span>
                     <span className="block font-medium">{c.name}</span>
                     <span className="block text-xs text-muted-foreground">
