@@ -6,7 +6,7 @@ import { AlertCircle, ArrowDownWideNarrow, Loader2, Search } from 'lucide-react'
 import { swrPost, formatUsd } from '@/lib/client-api'
 import { Flag } from '@/components/flag'
 import { PurchaseDialog, type Country } from '@/components/cabinet/purchase-dialog'
-import { useLang } from '@/lib/i18n'
+import { localizedCountryName, useLang, type Lang } from '@/lib/i18n'
 
 type SortMode = 'popular' | 'price-asc' | 'price-desc'
 
@@ -30,19 +30,23 @@ interface CountriesResponse {
   countries?: Array<Record<string, unknown>>
 }
 
-function normalizeCountry(raw: Record<string, unknown>): Country | null {
+function normalizeCountry(
+  raw: Record<string, unknown>,
+  lang: Lang,
+): Country | null {
   const code = String(raw.countryCode ?? raw.code ?? '')
   if (!code) return null
+  const botName = String(raw.name ?? raw.countryName ?? code)
   return {
     code,
-    name: String(raw.name ?? raw.countryName ?? code),
+    name: localizedCountryName(lang, code, botName),
     price: String(raw.price ?? raw.displayPrice ?? '0'),
     available: Number(raw.available ?? raw.count ?? raw.quantity ?? 0),
   }
 }
 
 export function ShopCatalog() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const { data, error, isLoading } = useSWR(
     'countries',
     swrPost<CountriesResponse>('countries'),
@@ -60,7 +64,7 @@ export function ShopCatalog() {
 
   const countries = sortCountries(
     (data?.countries ?? [])
-      .map(normalizeCountry)
+      .map((raw) => normalizeCountry(raw, lang))
       .filter((c): c is Country => c !== null)
       .filter((c) => c.name.toLowerCase().includes(query.trim().toLowerCase())),
     sort,

@@ -2,7 +2,8 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { cookies, headers } from 'next/headers'
-import { LanguageProvider, LANG_COOKIE, type Lang } from '@/lib/i18n'
+import { LanguageProvider } from '@/lib/i18n'
+import { LANG_COOKIE, type Lang } from '@/lib/lang'
 import './globals.css'
 
 const _inter = Inter({ subsets: ['latin', 'cyrillic'] })

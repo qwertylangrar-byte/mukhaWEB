@@ -9,9 +9,10 @@ import {
   type ReactNode,
 } from 'react'
 
-export type Lang = 'ru' | 'en'
+import { LANG_COOKIE, type Lang } from '@/lib/lang'
 
-export const LANG_COOKIE = 'lang'
+export { LANG_COOKIE }
+export type { Lang }
 
 /* ------------------------------------------------------------------ */
 /* Dictionaries                                                        */
@@ -271,7 +272,7 @@ const ru = {
     values: [
       {
         title: 'Мгновенная выдача',
-        text: 'Аккаунты выдаются автоматически сразу после оплаты — без ручной обработки и ожидания.',
+        text: 'Аккаунты выдаются автоматически сразу по��ле оплаты — без ручной обработки и ожидания.',
       },
       {
         title: 'Десятки стран',
@@ -654,6 +655,25 @@ export function LanguageProvider({
   )
 
   return <LangContext.Provider value={value}>{children}</LangContext.Provider>
+}
+
+/**
+ * Localized country name: for English UI we translate via Intl.DisplayNames
+ * using the ISO code (the bot returns Russian names); Russian UI keeps the
+ * original bot-provided name.
+ */
+export function localizedCountryName(
+  lang: Lang,
+  code: string | null | undefined,
+  fallbackName: string,
+): string {
+  if (lang === 'ru' || !code) return fallbackName
+  try {
+    const display = new Intl.DisplayNames(['en'], { type: 'region' })
+    return display.of(code.toUpperCase()) ?? fallbackName
+  } catch {
+    return fallbackName
+  }
 }
 
 export function useLang(): LangContextValue {

@@ -12,7 +12,7 @@ import {
 import { postBot, formatUsd } from '@/lib/client-api'
 import { Flag } from '@/components/flag'
 import { Button } from '@/components/ui/button'
-import { useLang } from '@/lib/i18n'
+import { localizedCountryName, useLang } from '@/lib/i18n'
 
 interface Purchase {
   id: string | number
@@ -84,7 +84,7 @@ export function OrdersList() {
 }
 
 function OrderCard({ purchase }: { purchase: Purchase }) {
-  const { t, locale } = useLang()
+  const { t, locale, lang } = useLang()
   const status = String(purchase.status ?? '').toUpperCase()
   const isRefunded = status === 'REFUNDED' || status === 'REFUND'
   const isBulk =
@@ -122,7 +122,14 @@ function OrderCard({ purchase }: { purchase: Purchase }) {
                 : purchase.phoneNumber || t.orders.accountFallback}
             </p>
             <p className="text-xs text-muted-foreground">
-              {[purchase.countryName || purchase.countryCode, created]
+              {[
+                localizedCountryName(
+                  lang,
+                  purchase.countryCode,
+                  purchase.countryName || purchase.countryCode || '',
+                ),
+                created,
+              ]
                 .filter(Boolean)
                 .join(' · ')}
             </p>
