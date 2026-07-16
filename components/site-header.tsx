@@ -9,6 +9,7 @@ export function SiteHeader() {
         <Logo />
         <Button
           size="sm"
+          nativeButton={false}
           className="rounded-full px-4"
           render={<Link href="/login">Войти через Telegram</Link>}
         />

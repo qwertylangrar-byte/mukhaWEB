@@ -100,6 +100,7 @@ export default function HomePage() {
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
             <Button
               size="lg"
+              nativeButton={false}
               className="h-11 rounded-full px-6 text-sm shadow-[0_0_30px_-6px] shadow-primary/60"
               render={
                 <Link href="/login">
@@ -111,6 +112,7 @@ export default function HomePage() {
             <Button
               size="lg"
               variant="outline"
+              nativeButton={false}
               className="h-11 rounded-full px-6 text-sm"
               render={
                 <Link href="/shop">
@@ -202,6 +204,7 @@ export default function HomePage() {
               <div className="mt-8 flex justify-center">
                 <Button
                   size="lg"
+                  nativeButton={false}
                   className="h-11 rounded-full px-6 text-sm shadow-[0_0_30px_-6px] shadow-primary/60"
                   render={
                     <Link href="/login">

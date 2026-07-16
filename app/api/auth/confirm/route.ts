@@ -5,7 +5,10 @@ import { confirmLogin } from '@/lib/login-store'
 /** Called by the BOT after the user sends /start web_<code>. */
 export async function POST(request: NextRequest) {
   const secret = process.env.BRIDGE_SECRET
-  const provided = request.headers.get('x-bridge-secret') ?? ''
+  const auth = request.headers.get('authorization') ?? ''
+  const provided =
+    request.headers.get('x-bridge-secret') ??
+    (auth.startsWith('Bearer ') ? auth.slice(7) : '')
   if (
     !secret ||
     provided.length !== secret.length ||

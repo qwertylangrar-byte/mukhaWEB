@@ -137,6 +137,7 @@ export function PurchaseDialog({
               </p>
             ) : null}
             <Button
+              nativeButton={false}
               className="mt-4 h-10 w-full rounded-full"
               render={<Link href="/orders">Перейти к покупкам</Link>}
             />

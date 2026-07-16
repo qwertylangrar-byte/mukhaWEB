@@ -16,7 +16,7 @@ export default async function CabinetLayout({
         firstName={session.firstName}
         username={session.username}
       />
-      <main className="mx-auto max-w-6xl md:px-2">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">{children}</main>
     </div>
   )
 }

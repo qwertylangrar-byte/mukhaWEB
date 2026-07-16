@@ -13,8 +13,8 @@ export interface Session {
 }
 
 function getSecret(): string {
-  const secret = process.env.BRIDGE_SECRET
-  if (!secret) throw new Error('BRIDGE_SECRET is not set')
+  const secret = process.env.SESSION_SECRET ?? process.env.BRIDGE_SECRET
+  if (!secret) throw new Error('SESSION_SECRET or BRIDGE_SECRET must be set')
   return secret
 }
 
