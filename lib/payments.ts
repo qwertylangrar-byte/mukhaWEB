@@ -52,12 +52,13 @@ export function telegramIdFromOrderId(orderId: string): number | null {
 /* ---------------------------------- Heleket --------------------------------- */
 
 function heleketConfig() {
-  const merchant = process.env.HELEKET_MERCHANT_UUID
-  const key = process.env.HELEKET_PAYMENT_API_KEY
+  const merchant =
+    process.env.HELEKET_MERCHANT_ID ?? process.env.HELEKET_MERCHANT_UUID
+  const key = process.env.HELEKET_API_KEY ?? process.env.HELEKET_PAYMENT_API_KEY
   if (!merchant || !key) {
     throw new PaymentError(
       503,
-      'Heleket не настроен. Добавьте HELEKET_MERCHANT_UUID и HELEKET_PAYMENT_API_KEY.',
+      'Heleket не настроен. Добавьте HELEKET_MERCHANT_ID и HELEKET_API_KEY.',
     )
   }
   return { merchant, key }
