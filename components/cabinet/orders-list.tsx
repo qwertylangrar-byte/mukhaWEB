@@ -12,6 +12,7 @@ import {
 import { postBot, formatUsd } from '@/lib/client-api'
 import { Flag } from '@/components/flag'
 import { Button } from '@/components/ui/button'
+import { useLang } from '@/lib/i18n'
 
 interface Purchase {
   id: string | number
@@ -33,6 +34,7 @@ interface HistoryResponse {
 }
 
 export function OrdersList() {
+  const { t } = useLang()
   const { data, error, isLoading } = useSWR<HistoryResponse>(
     'bot/history',
     () => postBot<HistoryResponse>('history', { limit: 100 }),
@@ -53,7 +55,9 @@ export function OrdersList() {
     return (
       <div className="mt-8 flex items-center gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm" role="alert">
         <AlertCircle className="size-5 shrink-0 text-destructive" />
-        <span>{error instanceof Error ? error.message : 'Не удалось загрузить покупки'}</span>
+        <span>
+          {error instanceof Error ? error.message : t.orders.loadFailed}
+        </span>
       </div>
     )
   }
@@ -64,10 +68,8 @@ export function OrdersList() {
         <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
           <ShoppingBag className="size-6" />
         </span>
-        <p className="font-medium">Покупок пока нет</p>
-        <p className="text-sm text-muted-foreground">
-          Выберите страну в магазине — аккаунт появится здесь сразу после покупки.
-        </p>
+        <p className="font-medium">{t.orders.emptyTitle}</p>
+        <p className="text-sm text-muted-foreground">{t.orders.emptyText}</p>
       </div>
     )
   }
@@ -82,6 +84,7 @@ export function OrdersList() {
 }
 
 function OrderCard({ purchase }: { purchase: Purchase }) {
+  const { t, locale } = useLang()
   const status = String(purchase.status ?? '').toUpperCase()
   const isRefunded = status === 'REFUNDED' || status === 'REFUND'
   const isBulk =
@@ -90,7 +93,7 @@ function OrderCard({ purchase }: { purchase: Purchase }) {
     Boolean(purchase.archiveUrl)
 
   const created = purchase.createdAt
-    ? new Date(purchase.createdAt).toLocaleString('ru-RU', {
+    ? new Date(purchase.createdAt).toLocaleString(locale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -114,9 +117,9 @@ function OrderCard({ purchase }: { purchase: Purchase }) {
             <p className="font-semibold">
               {isBulk
                 ? purchase.quantity
-                  ? `Оптовый заказ · ${purchase.quantity} шт.`
-                  : 'Оптовый заказ'
-                : purchase.phoneNumber || 'Аккаунт'}
+                  ? t.orders.bulkOrderQty(purchase.quantity)
+                  : t.orders.bulkOrder
+                : purchase.phoneNumber || t.orders.accountFallback}
             </p>
             <p className="text-xs text-muted-foreground">
               {[purchase.countryName || purchase.countryCode, created]
@@ -139,7 +142,7 @@ function OrderCard({ purchase }: { purchase: Purchase }) {
                 : 'bg-[color-mix(in_oklch,var(--success)_15%,transparent)] text-[var(--success)]')
             }
           >
-            {isRefunded ? 'Возврат' : 'Активна'}
+            {isRefunded ? t.orders.refunded : t.orders.active}
           </span>
         </div>
       </div>
@@ -155,6 +158,7 @@ function OrderCard({ purchase }: { purchase: Purchase }) {
  * Archives are only kept for a limited time (~2–3 days) after purchase.
  */
 function BulkArchiveActions({ purchase }: { purchase: Purchase }) {
+  const { t } = useLang()
   const [archiveUrl, setArchiveUrl] = useState<string | null>(
     purchase.archiveUrl ?? null,
   )
@@ -174,16 +178,12 @@ function BulkArchiveActions({ purchase }: { purchase: Purchase }) {
       if (res.archiveUrl) {
         setArchiveUrl(res.archiveUrl)
       } else if (String(res.status ?? '').toUpperCase() === 'PENDING') {
-        setMessage('Архив ещё готовится — попробуйте через минуту.')
+        setMessage(t.orders.archivePending)
       } else {
-        setMessage(
-          'Архив недоступен. Архивы хранятся ограниченное время (около 2–3 дней после покупки).',
-        )
+        setMessage(t.orders.archiveGone)
       }
     } catch (err) {
-      setMessage(
-        err instanceof Error ? err.message : 'Не удалось получить архив',
-      )
+      setMessage(err instanceof Error ? err.message : t.orders.archiveFailed)
     } finally {
       setLoading(false)
     }
@@ -201,7 +201,7 @@ function BulkArchiveActions({ purchase }: { purchase: Purchase }) {
             render={
               <a href={archiveUrl} download>
                 <Archive className="size-4" />
-                Скачать архив
+                {t.orders.downloadArchive}
               </a>
             }
           />
@@ -218,11 +218,11 @@ function BulkArchiveActions({ purchase }: { purchase: Purchase }) {
             ) : (
               <Archive className="size-4" />
             )}
-            Получить архив
+            {t.orders.getArchive}
           </Button>
         )}
         <span className="text-xs text-muted-foreground">
-          Архив доступен около 2–3 дней после покупки.
+          {t.orders.archiveTtl}
         </span>
       </div>
       {message ? (

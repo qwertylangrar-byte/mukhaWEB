@@ -1,16 +1,14 @@
 import { ShopCatalog } from '@/components/cabinet/shop-catalog'
+import { PageHeading } from '@/components/cabinet/page-heading'
 
 export const metadata = {
-  title: 'Магазин — MukhaTG',
+  title: 'Магазин — MukhaTG | Shop',
 }
 
 export default function ShopPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Магазин</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Выберите страну — аккаунты выдаются мгновенно после оплаты с баланса.
-      </p>
+      <PageHeading section="shop" />
       <ShopCatalog />
     </div>
   )

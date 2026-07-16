@@ -18,6 +18,7 @@ import {
 import { postBot, formatUsd } from '@/lib/client-api'
 import { Flag } from '@/components/flag'
 import { Button } from '@/components/ui/button'
+import { useLang } from '@/lib/i18n'
 
 export interface Country {
   code: string
@@ -37,35 +38,8 @@ type CodeState =
   | { phase: 'success'; code: string }
   | { phase: 'error'; message: string }
 
-const STEPS: Array<{ title: string; text: string }> = [
-  {
-    title: 'Покупка',
-    text: 'Нажмите кнопку «Купить». Вход в аккаунт выполняется по коду из Telegram. Заходите только с компьютера; на телефоне — только через нативное приложение, например Nicegram.',
-  },
-  {
-    title: 'Авторизация',
-    text: 'Откройте официальный клиент Telegram и войдите по выданному номеру телефона. Telegram запросит код подтверждения.',
-  },
-  {
-    title: 'Получение кода',
-    text: 'Сначала введите номер в Telegram и дождитесь надписи «код отправлен». Только после этого вернитесь на сайт и нажмите кнопку «Получить код».',
-  },
-  {
-    title: 'Рекомендации',
-    text: 'Обязательно прочитайте рекомендации по безопасности ниже. Без них аккаунт быстро заблокируют.',
-  },
-]
-
-const RECOMMENDATIONS: string[] = [
-  'Не используйте VPN для входа. VPN, особенно общий, вызывает подозрения у систем безопасности Telegram.',
-  'Входите через прокси. Купите прокси и используйте его не более чем для 5 аккаунтов.',
-  'Включите двухфакторную аутентификацию (2FA): Настройки → Конфиденциальность и безопасность → Двухфакторная аутентификация.',
-  'Дайте аккаунту «отлежаться» 2 дня — просто не выполняйте активных действий.',
-  'На 3-й день симулируйте активность: попросите 3–4 друзей написать вам в разное время, поговорите с ними.',
-  'На 4-й день можно начинать работу — аккаунт готов.',
-]
-
 function InfoBlock({ mode }: { mode: Mode }) {
+  const { t } = useLang()
   const [showRecs, setShowRecs] = useState(false)
   return (
     <div className="mt-5 space-y-3">
@@ -76,10 +50,8 @@ function InfoBlock({ mode }: { mode: Mode }) {
       >
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
         <p className="text-xs leading-relaxed">
-          <span className="font-semibold">
-            Обязательно включите запись экрана перед входом в аккаунт.
-          </span>{' '}
-          Это поможет получить замену в случае непредвиденных обстоятельств.
+          <span className="font-semibold">{t.purchase.warnRecord}</span>{' '}
+          {t.purchase.warnRecordSuffix}
         </p>
       </div>
 
@@ -88,24 +60,26 @@ function InfoBlock({ mode }: { mode: Mode }) {
         <div className="flex items-start gap-2.5 rounded-2xl border border-border/70 bg-muted/40 px-4 py-3">
           <MonitorSmartphone className="mt-0.5 size-4 shrink-0 text-primary" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Вход — по коду из Telegram.{' '}
+            {t.purchase.deviceNote1}{' '}
             <span className="font-medium text-foreground">
-              Заходите только с компьютера.
+              {t.purchase.deviceNote2}
             </span>{' '}
-            На телефоне — только через нативное приложение, например{' '}
+            {t.purchase.deviceNote3}{' '}
             <span className="font-medium text-foreground">Nicegram</span>{' '}
-            (обычный официальный клиент на телефоне не подходит).
+            {t.purchase.deviceNote4}
           </p>
         </div>
       ) : (
         <div className="flex items-start gap-2.5 rounded-2xl border border-border/70 bg-muted/40 px-4 py-3">
           <MonitorSmartphone className="mt-0.5 size-4 shrink-0 text-primary" />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Оптом можно купить даже{' '}
-            <span className="font-medium text-foreground">1 штуку</span>.
-            Выдача — в формате{' '}
+            {t.purchase.bulkNote1}{' '}
+            <span className="font-medium text-foreground">
+              {t.purchase.bulkNote2}
+            </span>
+            {t.purchase.bulkNote3}{' '}
             <span className="font-medium text-foreground">TData + Session</span>{' '}
-            (архивом).
+            {t.purchase.bulkNote4}
           </p>
         </div>
       )}
@@ -113,7 +87,7 @@ function InfoBlock({ mode }: { mode: Mode }) {
       {/* Step-by-step instructions (relevant for single purchases) */}
       {mode === 'single' ? (
         <ol className="space-y-2 rounded-2xl border border-border/70 bg-background/50 p-4">
-          {STEPS.map((s, i) => (
+          {t.purchase.steps.map((s, i) => (
             <li key={s.title} className="flex gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">
                 {i + 1}
@@ -137,7 +111,7 @@ function InfoBlock({ mode }: { mode: Mode }) {
         >
           <ShieldCheck className="size-4 shrink-0 text-primary" />
           <span className="flex-1 text-xs font-medium">
-            Рекомендации по безопасности аккаунта
+            {t.purchase.recsTitle}
           </span>
           <ChevronDown
             className={
@@ -148,7 +122,7 @@ function InfoBlock({ mode }: { mode: Mode }) {
         </button>
         {showRecs ? (
           <ol className="space-y-2 border-t border-border/70 px-4 py-3">
-            {RECOMMENDATIONS.map((r, i) => (
+            {t.purchase.recommendations.map((r, i) => (
               <li key={i} className="flex gap-2.5">
                 <span className="text-[11px] font-bold text-primary">
                   {i + 1}.
@@ -174,6 +148,7 @@ export function PurchaseDialog({
   onClose: () => void
   onPurchased: () => void
 }) {
+  const { t } = useLang()
   const [mode, setMode] = useState<Mode>('single')
   const [quantity, setQuantity] = useState(1)
   const [busy, setBusy] = useState(false)
@@ -243,7 +218,7 @@ export function PurchaseDialog({
       }
       onPurchased()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось купить')
+      setError(err instanceof Error ? err.message : t.purchase.buyFailed)
     } finally {
       setBusy(false)
       setBulkPreparing(false)
@@ -279,7 +254,7 @@ export function PurchaseDialog({
           if (st === 'REFUND' || st === 'ERROR') {
             setCodeState({
               phase: 'error',
-              message: 'Покупка завершилась ошибкой — код недоступен.',
+              message: t.purchase.codeError,
             })
             return
           }
@@ -291,8 +266,7 @@ export function PurchaseDialog({
       if (!cancelled.current) {
         setCodeState({
           phase: 'error',
-          message:
-            'Код не пришёл за 120 секунд. Убедитесь, что вы ввели номер в Telegram и появилось «код отправлен», затем нажмите «Повторить».',
+          message: t.purchase.codeTimeout,
         })
       }
     } finally {
@@ -326,8 +300,7 @@ export function PurchaseDialog({
             <div>
               <h2 className="text-lg font-semibold">{country.name}</h2>
               <p className="text-xs text-muted-foreground">
-                В наличии {country.available} шт. · {formatUsd(country.price)}{' '}
-                за аккаунт
+                {t.purchase.stockLine(country.available, formatUsd(country.price))}
               </p>
             </div>
           </div>
@@ -336,7 +309,7 @@ export function PurchaseDialog({
             size="icon-sm"
             onClick={onClose}
             disabled={busy}
-            aria-label="Закрыть"
+            aria-label={t.common.close}
           >
             <X className="size-4" />
           </Button>
@@ -346,7 +319,7 @@ export function PurchaseDialog({
           <div className="mt-6">
             <div className="flex items-center gap-2 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_12%,transparent)] p-4 text-sm">
               <CheckCircle2 className="size-5 shrink-0 text-[var(--success)]" />
-              <span>Покупка выполнена.</span>
+              <span>{t.purchase.purchased}</span>
             </div>
 
             {/* Single: phone + code retrieval */}
@@ -366,8 +339,8 @@ export function PurchaseDialog({
                     >
                       <Copy className="size-4" />
                       {copied === done.single.phoneNumber
-                        ? 'Скопировано'
-                        : 'Копировать'}
+                        ? t.common.copied
+                        : t.common.copy}
                     </Button>
                   </div>
                 ) : null}
@@ -375,13 +348,11 @@ export function PurchaseDialog({
                 <div className="flex items-start gap-2.5 rounded-2xl border border-[color-mix(in_oklch,var(--warning,orange)_40%,transparent)] bg-muted/40 px-4 py-3">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Введите этот номер в официальном клиенте Telegram
-                    (с компьютера или через Nicegram на телефоне). Нажимайте
-                    «Получить код»{' '}
+                    {t.purchase.enterNumberNote}{' '}
                     <span className="font-medium text-foreground">
-                      только после того
+                      {t.purchase.onlyAfter}
                     </span>
-                    , как Telegram показал, что код отправлен.
+                    {t.purchase.codeSentSuffix}
                   </p>
                 </div>
 
@@ -389,7 +360,7 @@ export function PurchaseDialog({
                   <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-3">
                     <KeyRound className="size-4 shrink-0 text-[var(--success)]" />
                     <span className="text-sm text-muted-foreground">
-                      Код входа:
+                      {t.purchase.loginCode}
                     </span>
                     <span className="font-mono text-xl font-bold tracking-widest">
                       {codeState.code}
@@ -401,7 +372,9 @@ export function PurchaseDialog({
                       onClick={() => copyText(codeState.code)}
                     >
                       <Copy className="size-4" />
-                      {copied === codeState.code ? 'Скопировано' : 'Копировать'}
+                      {copied === codeState.code
+                        ? t.common.copied
+                        : t.common.copy}
                     </Button>
                   </div>
                 ) : codeState.phase === 'polling' ? (
@@ -409,18 +382,17 @@ export function PurchaseDialog({
                     <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
                     <div className="flex-1">
                       <p className="text-sm font-medium">
-                        Ждём код от Telegram…
+                        {t.purchase.waitingCode}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Осталось до {codeState.secondsLeft} с. Не закрывайте
-                        страницу.
+                        {t.purchase.secondsLeft(codeState.secondsLeft)}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <Button className="h-11 w-full rounded-full" onClick={getCode}>
                     <KeyRound className="size-4" />
-                    Получить код
+                    {t.purchase.getCode}
                   </Button>
                 )}
 
@@ -439,7 +411,7 @@ export function PurchaseDialog({
                       className="rounded-full"
                       onClick={getCode}
                     >
-                      Повторить
+                      {t.common.retry}
                     </Button>
                   </div>
                 ) : null}
@@ -452,11 +424,11 @@ export function PurchaseDialog({
                 href={done.bulk.archiveUrl}
                 className="mt-3 block text-center text-sm text-primary underline underline-offset-2"
               >
-                Скачать архив с аккаунтами (TData + Session)
+                {t.purchase.downloadArchive}
               </a>
             ) : done.bulk && done.bulk.status !== 'SUCCESS' ? (
               <p className="mt-3 text-center text-xs text-muted-foreground">
-                Архив ещё готовится — ссылка появится в разделе «Покупки».
+                {t.purchase.archiveLater}
               </p>
             ) : null}
 
@@ -464,7 +436,7 @@ export function PurchaseDialog({
               nativeButton={false}
               variant="outline"
               className="mt-4 h-10 w-full rounded-full bg-transparent"
-              render={<Link href="/orders">Перейти к покупкам</Link>}
+              render={<Link href="/orders">{t.purchase.goToOrders}</Link>}
             />
           </div>
         ) : (
@@ -482,7 +454,7 @@ export function PurchaseDialog({
                       : 'text-muted-foreground hover:text-foreground')
                   }
                 >
-                  {m === 'single' ? 'Поштучно' : 'Оптом'}
+                  {m === 'single' ? t.purchase.single : t.purchase.bulk}
                 </button>
               ))}
             </div>
@@ -495,7 +467,7 @@ export function PurchaseDialog({
                   htmlFor="qty"
                   className="text-sm font-medium text-muted-foreground"
                 >
-                  Количество
+                  {t.purchase.quantity}
                 </label>
                 <input
                   id="qty"
@@ -517,7 +489,9 @@ export function PurchaseDialog({
             ) : null}
 
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-muted/60 px-4 py-3">
-              <span className="text-sm text-muted-foreground">Итого</span>
+              <span className="text-sm text-muted-foreground">
+                {t.purchase.total}
+              </span>
               <span className="text-lg font-bold tabular-nums text-primary">
                 {formatUsd(total)}
               </span>
@@ -528,10 +502,9 @@ export function PurchaseDialog({
                 <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    Не закрывайте страницу
+                    {t.purchase.dontClosePage}
                   </span>{' '}
-                  — архив с аккаунтами готовится. Скачать его также можно будет
-                  в разделе «Покупки».
+                  {t.purchase.archivePreparingNote}
                 </p>
               </div>
             ) : null}
@@ -554,9 +527,9 @@ export function PurchaseDialog({
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {busy
                 ? bulkPreparing
-                  ? 'Готовим архив…'
-                  : 'Обработка...'
-                : `Купить за ${formatUsd(total)}`}
+                  ? t.purchase.preparingArchive
+                  : t.purchase.processing
+                : t.purchase.buyFor(formatUsd(total))}
             </Button>
           </>
         )}

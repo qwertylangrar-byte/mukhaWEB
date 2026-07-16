@@ -6,14 +6,9 @@ import { AlertCircle, ArrowDownWideNarrow, Loader2, Search } from 'lucide-react'
 import { swrPost, formatUsd } from '@/lib/client-api'
 import { Flag } from '@/components/flag'
 import { PurchaseDialog, type Country } from '@/components/cabinet/purchase-dialog'
+import { useLang } from '@/lib/i18n'
 
 type SortMode = 'popular' | 'price-asc' | 'price-desc'
-
-const SORT_OPTIONS: Array<{ value: SortMode; label: string }> = [
-  { value: 'popular', label: 'По популярности' },
-  { value: 'price-asc', label: 'Сначала дешевле' },
-  { value: 'price-desc', label: 'Сначала дороже' },
-]
 
 function sortCountries(list: Country[], mode: SortMode): Country[] {
   const sorted = [...list]
@@ -47,6 +42,7 @@ function normalizeCountry(raw: Record<string, unknown>): Country | null {
 }
 
 export function ShopCatalog() {
+  const { t } = useLang()
   const { data, error, isLoading } = useSWR(
     'countries',
     swrPost<CountriesResponse>('countries'),
@@ -55,6 +51,12 @@ export function ShopCatalog() {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortMode>('popular')
   const [selected, setSelected] = useState<Country | null>(null)
+
+  const sortOptions: Array<{ value: SortMode; label: string }> = [
+    { value: 'popular', label: t.shop.sortPopular },
+    { value: 'price-asc', label: t.shop.sortCheap },
+    { value: 'price-desc', label: t.shop.sortExpensive },
+  ]
 
   const countries = sortCountries(
     (data?.countries ?? [])
@@ -73,9 +75,9 @@ export function ShopCatalog() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск страны..."
+            placeholder={t.shop.searchPlaceholder}
             className="h-10 w-full rounded-full border border-input bg-card/60 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40"
-            aria-label="Поиск страны"
+            aria-label={t.shop.searchLabel}
           />
         </div>
         <div className="relative">
@@ -84,9 +86,9 @@ export function ShopCatalog() {
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
             className="h-10 appearance-none rounded-full border border-input bg-card/60 pl-10 pr-8 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/40"
-            aria-label="Сортировка каталога"
+            aria-label={t.shop.sortLabel}
           >
-            {SORT_OPTIONS.map((o) => (
+            {sortOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -98,23 +100,21 @@ export function ShopCatalog() {
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          Загружаем каталог...
+          {t.shop.loading}
         </div>
       ) : error ? (
         <div className="mt-8 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-5 text-sm">
           <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
           <div>
-            <p className="font-medium text-destructive">
-              Каталог временно недоступен
-            </p>
+            <p className="font-medium text-destructive">{t.shop.unavailable}</p>
             <p className="mt-1 leading-relaxed text-muted-foreground">
-              {error instanceof Error ? error.message : 'Ошибка соединения с ботом.'}
+              {error instanceof Error ? error.message : t.shop.connError}
             </p>
           </div>
         </div>
       ) : countries.length === 0 ? (
         <p className="py-24 text-center text-sm text-muted-foreground">
-          Ничего не найдено.
+          {t.shop.nothing}
         </p>
       ) : (
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -133,9 +133,7 @@ export function ShopCatalog() {
                   <span>
                     <span className="block font-medium">{c.name}</span>
                     <span className="block text-xs text-muted-foreground">
-                      {inStock
-                        ? `В наличии: ${c.available}`
-                        : 'Нет в наличии'}
+                      {inStock ? t.shop.inStock(c.available) : t.shop.outOfStock}
                     </span>
                   </span>
                 </span>

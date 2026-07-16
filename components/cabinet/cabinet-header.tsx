@@ -6,16 +6,10 @@ import useSWR from 'swr'
 import { LogOut, Plus, Wallet } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { cn } from '@/lib/utils'
 import { formatUsd } from '@/lib/client-api'
-
-const nav = [
-  { href: '/shop', label: 'Магазин' },
-  { href: '/orders', label: 'Покупки' },
-  { href: '/topup', label: 'Пополнение' },
-  { href: '/referral', label: 'Рефералы' },
-  { href: '/about', label: 'О нас' },
-]
+import { useLang } from '@/lib/i18n'
 
 interface MeResponse {
   user: { balance?: string } | null
@@ -36,7 +30,16 @@ export function CabinetHeader({
 }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { t } = useLang()
   const { data } = useSWR('me', fetchMe, { refreshInterval: 30000 })
+
+  const nav = [
+    { href: '/shop', label: t.nav.shop },
+    { href: '/orders', label: t.nav.orders },
+    { href: '/topup', label: t.nav.topup },
+    { href: '/referral', label: t.nav.referral },
+    { href: '/about', label: t.nav.about },
+  ]
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -51,7 +54,7 @@ export function CabinetHeader({
           <Logo href="/shop" />
           <nav
             className="hidden items-center gap-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] p-1 md:flex"
-            aria-label="Разделы"
+            aria-label={t.nav.sections}
           >
             {nav.map((item) => (
               <Link
@@ -84,13 +87,14 @@ export function CabinetHeader({
             </span>
           </Link>
           <span className="hidden text-sm text-muted-foreground lg:block">
-            {firstName || (username ? `@${username}` : 'Аккаунт')}
+            {firstName || (username ? `@${username}` : t.common.account)}
           </span>
+          <LanguageSwitcher />
           <Button
             variant="ghost"
             size="icon"
             onClick={logout}
-            aria-label="Выйти"
+            aria-label={t.common.logout}
           >
             <LogOut className="size-4" />
           </Button>
@@ -100,7 +104,7 @@ export function CabinetHeader({
       {/* Mobile nav */}
       <nav
         className="flex items-center gap-1 overflow-x-auto border-t border-border/40 px-4 py-2 md:hidden"
-        aria-label="Разделы"
+        aria-label={t.nav.sections}
       >
         {nav.map((item) => (
           <Link

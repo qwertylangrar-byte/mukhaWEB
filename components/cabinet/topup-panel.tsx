@@ -11,21 +11,7 @@ import {
 } from 'lucide-react'
 import { postBot, formatUsd } from '@/lib/client-api'
 import { Button } from '@/components/ui/button'
-
-const PROVIDERS = [
-  {
-    id: 'heleket',
-    name: 'Heleket',
-    desc: 'USDT, BTC, ETH, TON и 100+ монет',
-    mark: 'H',
-  },
-  {
-    id: 'cryptobot',
-    name: 'CryptoBot',
-    desc: 'Оплата внутри Telegram',
-    mark: 'CB',
-  },
-] as const
+import { useLang } from '@/lib/i18n'
 
 const PRESETS = [5, 10, 25, 50, 100]
 
@@ -46,14 +32,18 @@ interface Topup {
   createdAt?: string | null
 }
 
-async function postJson<T>(url: string, body: Record<string, unknown>): Promise<T> {
+async function postJson<T>(
+  url: string,
+  body: Record<string, unknown>,
+  fallbackError: string,
+): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
   const data = (await res.json().catch(() => ({}))) as T & { error?: string }
-  if (!res.ok) throw new Error(data.error || 'Ошибка запроса')
+  if (!res.ok) throw new Error(data.error || fallbackError)
   return data
 }
 
@@ -91,11 +81,17 @@ function loadPending(): PendingInvoice | null {
 }
 
 export function TopupPanel() {
+  const { t, locale } = useLang()
   const [provider, setProvider] = useState<string>('heleket')
   const [amount, setAmount] = useState<number>(10)
   const [busy, setBusy] = useState(false)
   const [pay, setPay] = useState<PayState>({ phase: 'idle' })
   const cancelled = useRef(false)
+
+  const providers = [
+    { id: 'heleket', name: 'Heleket', desc: t.topup.heleketDesc, mark: 'H' },
+    { id: 'cryptobot', name: 'CryptoBot', desc: t.topup.cryptobotDesc, mark: 'CB' },
+  ]
 
   const { data: topupsData, mutate } = useSWR<{ topups?: Topup[] }>(
     'bot/topups',
@@ -116,6 +112,7 @@ export function TopupPanel() {
         const s = await postJson<{ status: string; amount?: number }>(
           '/api/topup/status',
           { provider: inv.provider, externalId: inv.externalId },
+          t.topup.requestError,
         )
         if (s.status === 'PAID') {
           savePending(null)
@@ -126,7 +123,7 @@ export function TopupPanel() {
         }
         if (s.status === 'FAILED') {
           savePending(null)
-          setPay({ phase: 'error', message: 'Платёж не был завершён.' })
+          setPay({ phase: 'error', message: t.topup.notCompleted })
           return
         }
       } catch {
@@ -135,11 +132,7 @@ export function TopupPanel() {
       await new Promise((r) => setTimeout(r, PAY_POLL_INTERVAL_MS))
     }
     if (!cancelled.current) {
-      setPay({
-        phase: 'error',
-        message:
-          'Не дождались подтверждения оплаты. Если вы оплатили — нажмите «Проверить оплату».',
-      })
+      setPay({ phase: 'error', message: t.topup.notConfirmed })
     }
   }
 
@@ -169,6 +162,7 @@ export function TopupPanel() {
       const s = await postJson<{ status: string; amount?: number }>(
         '/api/topup/status',
         { provider: pending.provider, externalId: pending.externalId },
+        t.topup.requestError,
       )
       if (s.status === 'PAID') {
         savePending(null)
@@ -193,7 +187,7 @@ export function TopupPanel() {
         provider: string
         externalId: string
         url: string
-      }>('/api/topup/create', { provider, amount })
+      }>('/api/topup/create', { provider, amount }, t.topup.createFailed)
 
       const pending: PendingInvoice = {
         provider: inv.provider,
@@ -207,7 +201,7 @@ export function TopupPanel() {
     } catch (err) {
       setPay({
         phase: 'error',
-        message: err instanceof Error ? err.message : 'Не удалось создать платёж',
+        message: err instanceof Error ? err.message : t.topup.createFailed,
       })
     } finally {
       setBusy(false)
@@ -217,9 +211,11 @@ export function TopupPanel() {
   return (
     <div className="mt-6 flex flex-col gap-6">
       <section className="rounded-3xl border border-border/70 bg-card/80 p-6">
-        <h2 className="text-sm font-semibold text-muted-foreground">Способ оплаты</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          {t.topup.method}
+        </h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {PROVIDERS.map((p) => {
+          {providers.map((p) => {
             const active = provider === p.id
             return (
               <button
@@ -246,14 +242,18 @@ export function TopupPanel() {
                 </span>
                 <span>
                   <span className="block font-medium">{p.name}</span>
-                  <span className="block text-xs text-muted-foreground">{p.desc}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {p.desc}
+                  </span>
                 </span>
               </button>
             )
           })}
         </div>
 
-        <h2 className="mt-6 text-sm font-semibold text-muted-foreground">Сумма (USD)</h2>
+        <h2 className="mt-6 text-sm font-semibold text-muted-foreground">
+          {t.topup.amount}
+        </h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {PRESETS.map((v) => (
             <button
@@ -273,7 +273,7 @@ export function TopupPanel() {
         </div>
         <div className="mt-3">
           <label htmlFor="custom-amount" className="sr-only">
-            Своя сумма
+            {t.topup.customAmount}
           </label>
           <input
             id="custom-amount"
@@ -283,7 +283,7 @@ export function TopupPanel() {
             value={amount}
             onChange={(e) => setAmount(Math.max(0, Number(e.target.value) || 0))}
             className="h-11 w-full rounded-xl border border-input bg-background/60 px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
-            placeholder="Своя сумма, $"
+            placeholder={t.topup.customAmountPlaceholder}
           />
         </div>
 
@@ -291,10 +291,9 @@ export function TopupPanel() {
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-background/50 px-4 py-3">
             <Loader2 className="size-5 animate-spin text-primary" />
             <div className="flex-1">
-              <p className="text-sm font-medium">Ожидаем оплату…</p>
+              <p className="text-sm font-medium">{t.topup.waitingPay}</p>
               <p className="text-xs text-muted-foreground">
-                Завершите платёж в открывшемся окне. Баланс в боте и на сайте
-                обновится автоматически.
+                {t.topup.completePay}
               </p>
             </div>
             {pay.url ? (
@@ -306,7 +305,7 @@ export function TopupPanel() {
                 render={
                   <a href={pay.url} target="_blank" rel="noopener noreferrer">
                     <ArrowUpRight className="size-4" />
-                    Открыть оплату
+                    {t.topup.openPay}
                   </a>
                 }
               />
@@ -318,13 +317,16 @@ export function TopupPanel() {
           <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-3 text-sm">
             <CheckCircle2 className="size-5 text-[var(--success)]" />
             {pay.amount > 0
-              ? `Оплата получена — ${formatUsd(pay.amount)} зачислено на баланс.`
-              : 'Оплата найдена и зачислена на баланс.'}
+              ? t.topup.paidCredited(formatUsd(pay.amount))
+              : t.topup.paidFound}
           </div>
         ) : null}
 
         {pay.phase === 'error' ? (
-          <p className="mt-4 flex items-center gap-2 text-sm text-destructive" role="alert">
+          <p
+            className="mt-4 flex items-center gap-2 text-sm text-destructive"
+            role="alert"
+          >
             <AlertCircle className="size-4 shrink-0" />
             {pay.message}
           </p>
@@ -336,8 +338,12 @@ export function TopupPanel() {
             onClick={createTopup}
             disabled={busy || amount < 1}
           >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-            {busy ? 'Подождите…' : `Пополнить на ${formatUsd(amount)}`}
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Wallet className="size-4" />
+            )}
+            {busy ? t.topup.wait : t.topup.topupFor(formatUsd(amount))}
           </Button>
           <Button
             variant="outline"
@@ -345,35 +351,39 @@ export function TopupPanel() {
             onClick={checkNow}
             disabled={busy}
           >
-            Проверить оплату
+            {t.topup.checkPay}
           </Button>
         </div>
       </section>
 
       {topups.length > 0 ? (
         <section className="rounded-3xl border border-border/70 bg-card/80 p-6">
-          <h2 className="text-sm font-semibold text-muted-foreground">Последние пополнения</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            {t.topup.recent}
+          </h2>
           <ul className="mt-3 flex flex-col gap-2">
-            {topups.map((t) => {
-              const st = String(t.status ?? '').toUpperCase()
+            {topups.map((tp) => {
+              const st = String(tp.status ?? '').toUpperCase()
               const ok = st === 'SUCCESS' || st === 'PAID' || st === 'COMPLETED'
               return (
                 <li
-                  key={String(t.id)}
+                  key={String(tp.id)}
                   className="flex items-center justify-between rounded-xl bg-background/40 px-4 py-2.5 text-sm"
                 >
                   <span className="text-muted-foreground">
-                    {t.createdAt
-                      ? new Date(t.createdAt).toLocaleString('ru-RU', {
+                    {tp.createdAt
+                      ? new Date(tp.createdAt).toLocaleString(locale, {
                           day: '2-digit',
                           month: '2-digit',
                           hour: '2-digit',
                           minute: '2-digit',
                         })
-                      : t.provider || '—'}
+                      : tp.provider || '—'}
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="font-medium tabular-nums">{formatUsd(t.amount)}</span>
+                    <span className="font-medium tabular-nums">
+                      {formatUsd(tp.amount)}
+                    </span>
                     <span
                       className={
                         'rounded-full px-2 py-0.5 text-xs ' +
@@ -382,7 +392,7 @@ export function TopupPanel() {
                           : 'bg-muted text-muted-foreground')
                       }
                     >
-                      {ok ? 'Оплачено' : st || 'В обработке'}
+                      {ok ? t.topup.paid : st || t.topup.processing}
                     </span>
                   </span>
                 </li>

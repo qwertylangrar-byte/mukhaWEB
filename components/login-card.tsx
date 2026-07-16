@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Send, ShieldCheck } from 'lucide-react'
 import { LogoMark } from '@/components/logo'
 import { Button } from '@/components/ui/button'
+import { useLang } from '@/lib/i18n'
 
 type LoginState = 'idle' | 'starting' | 'waiting' | 'confirmed' | 'error'
 
@@ -13,6 +14,7 @@ const MAX_WAIT_MS = 5 * 60 * 1000
 
 export function LoginCard() {
   const router = useRouter()
+  const { t } = useLang()
   const [state, setState] = useState<LoginState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
@@ -39,7 +41,7 @@ export function LoginCard() {
         error?: string
       }
       if (!res.ok || !data.code || !data.link) {
-        throw new Error(data.error ?? 'Не удалось начать вход')
+        throw new Error(data.error ?? t.login.startFailed)
       }
       setLink(data.link)
       setState('waiting')
@@ -51,7 +53,7 @@ export function LoginCard() {
         if (Date.now() - startedAt > MAX_WAIT_MS) {
           stopPolling()
           setState('error')
-          setError('Время ожидания истекло. Попробуйте ещё раз.')
+          setError(t.login.timedOut)
           return
         }
         try {
@@ -68,7 +70,7 @@ export function LoginCard() {
           } else if (status.status === 'expired') {
             stopPolling()
             setState('error')
-            setError('Код входа истёк. Попробуйте ещё раз.')
+            setError(t.login.codeExpired)
           }
         } catch {
           // network hiccup — keep polling
@@ -76,9 +78,9 @@ export function LoginCard() {
       }, POLL_INTERVAL_MS)
     } catch (err) {
       setState('error')
-      setError(err instanceof Error ? err.message : 'Ошибка входа')
+      setError(err instanceof Error ? err.message : t.login.loginError)
     }
-  }, [router, stopPolling])
+  }, [router, stopPolling, t])
 
   const busy = state === 'starting' || state === 'confirmed'
 
@@ -87,22 +89,19 @@ export function LoginCard() {
       <div className="flex justify-center">
         <LogoMark className="size-12 rounded-2xl text-base" />
       </div>
-      <h1 className="mt-6 text-2xl font-bold tracking-tight">
-        Вход через Telegram
-      </h1>
+      <h1 className="mt-6 text-2xl font-bold tracking-tight">{t.login.title}</h1>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        Авторизация проходит прямо в боте. Никаких паролей — ваш баланс и
-        покупки те же, что и в Telegram.
+        {t.login.text}
       </p>
 
       {state === 'waiting' ? (
         <div className="mt-6 rounded-2xl border border-primary/30 bg-primary/10 p-4">
           <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary">
             <Loader2 className="size-4 animate-spin" />
-            Ожидаем подтверждение в боте...
+            {t.login.waiting}
           </div>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            Откройте Telegram и нажмите «Start» в боте. Если бот не открылся —{' '}
+            {t.login.openBot}{' '}
             {link ? (
               <a
                 href={link}
@@ -110,10 +109,10 @@ export function LoginCard() {
                 rel="noopener noreferrer"
                 className="text-primary underline underline-offset-2"
               >
-                перейдите по ссылке
+                {t.login.followLink}
               </a>
             ) : (
-              'попробуйте ещё раз'
+              t.login.tryAgain
             )}
             .
           </p>
@@ -129,7 +128,7 @@ export function LoginCard() {
           ) : (
             <Send className="size-4" />
           )}
-          {state === 'confirmed' ? 'Входим...' : 'Войти через Telegram'}
+          {state === 'confirmed' ? t.login.loggingIn : t.nav.loginTg}
         </Button>
       )}
 
@@ -141,7 +140,7 @@ export function LoginCard() {
 
       <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <ShieldCheck className="size-3.5" />
-        Безопасный вход. Мы не запрашиваем ваш пароль от Telegram.
+        {t.login.secure}
       </p>
     </div>
   )

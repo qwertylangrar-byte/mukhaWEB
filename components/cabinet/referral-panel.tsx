@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import { AlertCircle, Copy, Gift, Loader2, Users, Wallet } from 'lucide-react'
 import { postBot, formatUsd } from '@/lib/client-api'
 import { Button } from '@/components/ui/button'
+import { useLang } from '@/lib/i18n'
 
 interface ReferralData {
   referralLink?: string | null
@@ -17,6 +18,7 @@ interface ReferralData {
 }
 
 export function ReferralPanel() {
+  const { t } = useLang()
   const { data, error, isLoading } = useSWR<ReferralData>(
     'bot/referral',
     () => postBot<ReferralData>('referral'),
@@ -34,9 +36,14 @@ export function ReferralPanel() {
 
   if (error) {
     return (
-      <div className="mt-8 flex items-center gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm" role="alert">
+      <div
+        className="mt-8 flex items-center gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm"
+        role="alert"
+      >
         <AlertCircle className="size-5 shrink-0 text-destructive" />
-        <span>{error instanceof Error ? error.message : 'Не удалось загрузить данные'}</span>
+        <span>
+          {error instanceof Error ? error.message : t.referral.loadFailed}
+        </span>
       </div>
     )
   }
@@ -65,7 +72,7 @@ export function ReferralPanel() {
           </span>
           <div>
             <p className="text-2xl font-bold tabular-nums">{count}</p>
-            <p className="text-xs text-muted-foreground">Приглашено</p>
+            <p className="text-xs text-muted-foreground">{t.referral.invited}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-3xl border border-border/70 bg-card/80 p-5">
@@ -74,7 +81,7 @@ export function ReferralPanel() {
           </span>
           <div>
             <p className="text-2xl font-bold tabular-nums">{formatUsd(earned)}</p>
-            <p className="text-xs text-muted-foreground">Заработано</p>
+            <p className="text-xs text-muted-foreground">{t.referral.earned}</p>
           </div>
         </div>
       </div>
@@ -82,29 +89,32 @@ export function ReferralPanel() {
       <div className="rounded-3xl border border-border/70 bg-card/80 p-6">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Gift className="size-4 text-primary" />
-          Ваша реферальная ссылка
+          {t.referral.yourLink}
           {data?.percent ? (
             <span className="ml-auto rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-medium text-primary">
-              {data.percent}% с пополнений
+              {t.referral.percentNote(data.percent)}
             </span>
           ) : null}
         </div>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             readOnly
-            value={link || 'Ссылка недоступна'}
-            aria-label="Реферальная ссылка"
+            value={link || t.referral.linkUnavailable}
+            aria-label={t.referral.linkLabel}
             className="h-11 flex-1 rounded-xl border border-input bg-background/60 px-4 font-mono text-sm outline-none"
             onFocus={(e) => e.currentTarget.select()}
           />
-          <Button className="h-11 rounded-full px-5" onClick={copy} disabled={!link}>
+          <Button
+            className="h-11 rounded-full px-5"
+            onClick={copy}
+            disabled={!link}
+          >
             <Copy className="size-4" />
-            {copied ? 'Скопировано' : 'Копировать'}
+            {copied ? t.common.copied : t.common.copy}
           </Button>
         </div>
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-          Отправьте ссылку другу. Когда он зарегистрируется в боте и пополнит баланс,
-          вы автоматически получите бонус на свой счёт.
+          {t.referral.shareNote}
         </p>
       </div>
     </div>
