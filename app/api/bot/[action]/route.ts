@@ -30,6 +30,8 @@ function mapBridgePurchase(p: Record<string, unknown>) {
     Boolean(p.archiveUrl)
       ? 'bulk'
       : 'single'
+  const bulkId =
+    p.bulkPurchaseId ?? p.bulk_purchase_id ?? p.bulkId ?? p.bulk_id ?? null
   return {
     id: p.id,
     phoneNumber: p.phoneNumber ?? p.phone_number ?? null,
@@ -41,6 +43,8 @@ function mapBridgePurchase(p: Record<string, unknown>) {
     type,
     quantity,
     archiveUrl: typeof p.archiveUrl === 'string' ? p.archiveUrl : null,
+    bulkPurchaseId:
+      typeof bulkId === 'string' || typeof bulkId === 'number' ? bulkId : null,
     code: p.verificationCode ?? null,
   }
 }

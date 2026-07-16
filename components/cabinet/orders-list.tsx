@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import useSWR from 'swr'
 import {
   AlertCircle,
@@ -21,6 +22,7 @@ interface Purchase {
   status?: string | null
   createdAt?: string | null
   archiveUrl?: string | null
+  bulkPurchaseId?: string | number | null
   quantity?: number | null
   type?: string | null
 }
@@ -142,23 +144,92 @@ function OrderCard({ purchase }: { purchase: Purchase }) {
         </div>
       </div>
 
-      {isBulk && purchase.archiveUrl ? (
-        <div className="mt-4">
+      {isBulk ? <BulkArchiveActions purchase={purchase} /> : null}
+    </article>
+  )
+}
+
+/**
+ * Archive download for bulk orders in history. If the stored link is
+ * missing/stale, a fresh one is requested from the bot via bulk-status.
+ * Archives are only kept for a limited time (~2–3 days) after purchase.
+ */
+function BulkArchiveActions({ purchase }: { purchase: Purchase }) {
+  const [archiveUrl, setArchiveUrl] = useState<string | null>(
+    purchase.archiveUrl ?? null,
+  )
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  const bulkId = purchase.bulkPurchaseId ?? purchase.id
+
+  async function fetchArchive() {
+    setLoading(true)
+    setMessage(null)
+    try {
+      const res = await postBot<{ status?: string; archiveUrl?: string | null }>(
+        'bulk-status',
+        { bulkPurchaseId: bulkId },
+      )
+      if (res.archiveUrl) {
+        setArchiveUrl(res.archiveUrl)
+      } else if (String(res.status ?? '').toUpperCase() === 'PENDING') {
+        setMessage('Архив ещё готовится — попробуйте через минуту.')
+      } else {
+        setMessage(
+          'Архив недоступен. Архивы хранятся ограниченное время (около 2–3 дней после покупки).',
+        )
+      }
+    } catch (err) {
+      setMessage(
+        err instanceof Error ? err.message : 'Не удалось получить архив',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {archiveUrl ? (
           <Button
             variant="outline"
             size="sm"
             nativeButton={false}
             className="rounded-full bg-transparent"
             render={
-              <a href={purchase.archiveUrl} download>
+              <a href={archiveUrl} download>
                 <Archive className="size-4" />
                 Скачать архив
               </a>
             }
           />
-        </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full bg-transparent"
+            onClick={fetchArchive}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Archive className="size-4" />
+            )}
+            Получить архив
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground">
+          Архив доступен около 2–3 дней после покупки.
+        </span>
+      </div>
+      {message ? (
+        <p className="mt-2 text-xs text-muted-foreground" role="status">
+          {message}
+        </p>
       ) : null}
-
-    </article>
+    </div>
   )
 }

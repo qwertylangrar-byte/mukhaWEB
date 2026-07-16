@@ -2,10 +2,34 @@
 
 import { useState } from 'react'
 import useSWR, { mutate } from 'swr'
-import { AlertCircle, Loader2, Search } from 'lucide-react'
+import { AlertCircle, ArrowDownWideNarrow, Loader2, Search } from 'lucide-react'
 import { swrPost, formatUsd } from '@/lib/client-api'
 import { Flag } from '@/components/flag'
 import { PurchaseDialog, type Country } from '@/components/cabinet/purchase-dialog'
+
+type SortMode = 'popular' | 'price-asc' | 'price-desc'
+
+const SORT_OPTIONS: Array<{ value: SortMode; label: string }> = [
+  { value: 'popular', label: 'По популярности' },
+  { value: 'price-asc', label: 'Сначала дешевле' },
+  { value: 'price-desc', label: 'Сначала дороже' },
+]
+
+function sortCountries(list: Country[], mode: SortMode): Country[] {
+  const sorted = [...list]
+  switch (mode) {
+    case 'price-asc':
+      sorted.sort((a, b) => Number(a.price) - Number(b.price))
+      break
+    case 'price-desc':
+      sorted.sort((a, b) => Number(b.price) - Number(a.price))
+      break
+    default:
+      // Popularity: the biggest stock first (in-stock always above sold out)
+      sorted.sort((a, b) => b.available - a.available)
+  }
+  return sorted
+}
 
 interface CountriesResponse {
   countries?: Array<Record<string, unknown>>
@@ -29,25 +53,46 @@ export function ShopCatalog() {
     { refreshInterval: 60000 },
   )
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortMode>('popular')
   const [selected, setSelected] = useState<Country | null>(null)
 
-  const countries = (data?.countries ?? [])
-    .map(normalizeCountry)
-    .filter((c): c is Country => c !== null)
-    .filter((c) => c.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const countries = sortCountries(
+    (data?.countries ?? [])
+      .map(normalizeCountry)
+      .filter((c): c is Country => c !== null)
+      .filter((c) => c.name.toLowerCase().includes(query.trim().toLowerCase())),
+    sort,
+  )
 
   return (
     <div className="mt-6">
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Поиск страны..."
-          className="h-10 w-full rounded-full border border-input bg-card/60 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40"
-          aria-label="Поиск страны"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск страны..."
+            className="h-10 w-full rounded-full border border-input bg-card/60 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40"
+            aria-label="Поиск страны"
+          />
+        </div>
+        <div className="relative">
+          <ArrowDownWideNarrow className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortMode)}
+            className="h-10 appearance-none rounded-full border border-input bg-card/60 pl-10 pr-8 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/40"
+            aria-label="Сортировка каталога"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading ? (
