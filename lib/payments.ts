@@ -226,6 +226,28 @@ export async function cryptobotCreate(
   }
 }
 
+/**
+ * Recovery path: find recently PAID CryptoBot invoices belonging to the
+ * given user (payload = mukha_<telegramId>_...). Used to credit payments
+ * completed while the user was away from the site (polling stopped).
+ */
+export async function cryptobotRecentPaid(
+  telegramId: number,
+): Promise<Array<{ externalId: string; amountUsd: number }>> {
+  const res = await cryptobotFetch<{ items?: CryptobotInvoice[] }>('getInvoices', {
+    status: 'paid',
+    count: 100,
+  })
+  const prefix = `mukha_${telegramId}_`
+  return (res.items ?? [])
+    .filter((inv) => (inv.payload ?? '').startsWith(prefix))
+    .map((inv) => ({
+      externalId: String(inv.invoice_id),
+      amountUsd: Number(inv.amount) || 0,
+    }))
+    .filter((x) => x.amountUsd > 0)
+}
+
 export async function cryptobotStatus(invoiceId: string): Promise<InvoiceStatus> {
   const res = await cryptobotFetch<{ items?: CryptobotInvoice[] }>('getInvoices', {
     invoice_ids: invoiceId,

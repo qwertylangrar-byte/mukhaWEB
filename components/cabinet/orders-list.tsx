@@ -1,13 +1,10 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import useSWR from 'swr'
 import {
   AlertCircle,
   Archive,
-  CheckCircle2,
-  Copy,
-  KeyRound,
   Loader2,
   Phone,
   RotateCcw,
@@ -33,30 +30,6 @@ interface Purchase {
 interface HistoryResponse {
   purchases?: Purchase[]
   history?: Purchase[]
-}
-
-const CODE_POLL_TOTAL_MS = 120_000
-const CODE_POLL_INTERVAL_MS = 4_000
-
-type CodeState =
-  | { phase: 'idle' }
-  | { phase: 'polling'; secondsLeft: number }
-  | { phase: 'success'; code: string }
-  | { phase: 'error'; message: string }
-
-function extractCode(data: Record<string, unknown>): string | null {
-  const direct = data.code ?? data.loginCode ?? data.confirmationCode
-  if (typeof direct === 'string' && direct.trim() && direct !== 'PENDING') {
-    return direct.trim()
-  }
-  if (typeof direct === 'number') return String(direct)
-  const nested = data.result as Record<string, unknown> | undefined
-  if (nested && typeof nested === 'object') {
-    const c = nested.code
-    if (typeof c === 'string' && c.trim() && c !== 'PENDING') return c.trim()
-    if (typeof c === 'number') return String(c)
-  }
-  return null
 }
 
 export function OrdersList() {
@@ -115,11 +88,8 @@ function OrderCard({
   purchase: Purchase
   onChanged: () => void
 }) {
-  const [codeState, setCodeState] = useState<CodeState>({ phase: 'idle' })
   const [refunding, setRefunding] = useState(false)
   const [refundMsg, setRefundMsg] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const cancelled = useRef(false)
 
   const status = String(purchase.status ?? '').toUpperCase()
   const isRefunded = status === 'REFUNDED' || status === 'REFUND'
@@ -127,79 +97,6 @@ function OrderCard({
     (purchase.quantity ?? 1) > 1 ||
     String(purchase.type ?? '').toLowerCase() === 'bulk' ||
     Boolean(purchase.archiveUrl)
-
-  async function getCode() {
-    cancelled.current = false
-    const deadline = Date.now() + CODE_POLL_TOTAL_MS
-    setCodeState({ phase: 'polling', secondsLeft: CODE_POLL_TOTAL_MS / 1000 })
-
-    // Live countdown ticking every second, independent of network requests.
-    const ticker = setInterval(() => {
-      const secondsLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
-      setCodeState((prev) =>
-        prev.phase === 'polling' ? { phase: 'polling', secondsLeft } : prev,
-      )
-    }, 1000)
-
-    let first = true
-    try {
-      while (Date.now() < deadline && !cancelled.current) {
-        try {
-          const res = await postBot<Record<string, unknown>>('request-code', {
-            purchaseId: purchase.id,
-            // Trigger the code request at GetMyTG only on the FIRST call;
-            // subsequent calls just check whether the code has arrived.
-            trigger: first,
-          })
-          first = false
-          const code = extractCode(res)
-          if (code) {
-            setCodeState({ phase: 'success', code })
-            return
-          }
-          const status = String(res.status ?? '').toUpperCase()
-          if (status === 'REFUND' || status === 'ERROR') {
-            setCodeState({
-              phase: 'error',
-              message:
-                status === 'REFUND'
-                  ? 'По этой покупке оформлен возврат — код недоступен.'
-                  : 'Покупка завершилась ошибкой — оформите возврат.',
-            })
-            return
-          }
-          // PENDING — keep waiting, never show it to the user.
-        } catch (err) {
-          // Transient errors during polling are tolerated; hard-fail on auth errors
-          if (
-            err instanceof Error &&
-            'status' in err &&
-            (err as { status: number }).status === 401
-          ) {
-            setCodeState({ phase: 'error', message: 'Сессия истекла — войдите заново.' })
-            return
-          }
-        }
-
-        await new Promise((r) => setTimeout(r, CODE_POLL_INTERVAL_MS))
-      }
-
-      if (!cancelled.current) {
-        setCodeState({
-          phase: 'error',
-          message:
-            'Код не пришёл за 120 секунд. Нажмите «Повторить» — поиск кода запустится заново.',
-        })
-      }
-    } finally {
-      clearInterval(ticker)
-    }
-  }
-
-  function stopPolling() {
-    cancelled.current = true
-    setCodeState({ phase: 'idle' })
-  }
 
   async function refund() {
     if (!window.confirm('Оформить возврат по этой покупке?')) return
@@ -213,16 +110,6 @@ function OrderCard({
       setRefundMsg(err instanceof Error ? err.message : 'Не удалось оформить возврат')
     } finally {
       setRefunding(false)
-    }
-  }
-
-  async function copyCode(code: string) {
-    try {
-      await navigator.clipboard.writeText(code)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // clipboard unavailable
     }
   }
 
@@ -281,70 +168,22 @@ function OrderCard({
         </div>
       </div>
 
-      {/* Code area */}
       {!isRefunded && !isBulk ? (
-        <div className="mt-4">
-          {codeState.phase === 'success' ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-3">
-              <CheckCircle2 className="size-5 text-[var(--success)]" />
-              <span className="text-sm text-muted-foreground">Код входа:</span>
-              <span className="font-mono text-xl font-bold tracking-widest">
-                {codeState.code}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto rounded-full"
-                onClick={() => copyCode(codeState.code)}
-              >
-                <Copy className="size-4" />
-                {copied ? 'Скопировано' : 'Копировать'}
-              </Button>
-            </div>
-          ) : codeState.phase === 'polling' ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-background/50 px-4 py-3">
-              <Loader2 className="size-5 animate-spin text-primary" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Ждём код от Telegram…</p>
-                <p className="text-xs text-muted-foreground">
-                  Осталось до {codeState.secondsLeft} с. Не закрывайте страницу.
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" className="rounded-full" onClick={stopPolling}>
-                Отмена
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" className="rounded-full" onClick={getCode}>
-                <KeyRound className="size-4" />
-                Получить код
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full bg-transparent"
-                onClick={refund}
-                disabled={refunding}
-              >
-                {refunding ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <RotateCcw className="size-4" />
-                )}
-                Возврат
-              </Button>
-            </div>
-          )}
-          {codeState.phase === 'error' ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm" role="alert">
-              <AlertCircle className="size-4 shrink-0 text-destructive" />
-              <span className="flex-1">{codeState.message}</span>
-              <Button size="sm" variant="ghost" className="rounded-full" onClick={getCode}>
-                Повторить
-              </Button>
-            </div>
-          ) : null}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full bg-transparent"
+            onClick={refund}
+            disabled={refunding}
+          >
+            {refunding ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RotateCcw className="size-4" />
+            )}
+            Возврат
+          </Button>
         </div>
       ) : null}
 

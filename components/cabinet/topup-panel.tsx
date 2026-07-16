@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import useSWR, { mutate as globalMutate } from 'swr'
 import {
   AlertCircle,
@@ -57,6 +57,39 @@ async function postJson<T>(url: string, body: Record<string, unknown>): Promise<
   return data
 }
 
+/**
+ * The pending invoice is persisted so that polling survives page
+ * navigation/reload (the user usually leaves to pay in Telegram).
+ */
+const PENDING_KEY = 'mukha_pending_topup'
+
+interface PendingInvoice {
+  provider: string
+  externalId: string
+  url: string | null
+  amount: number
+}
+
+function savePending(inv: PendingInvoice | null) {
+  try {
+    if (inv) localStorage.setItem(PENDING_KEY, JSON.stringify(inv))
+    else localStorage.removeItem(PENDING_KEY)
+  } catch {
+    // storage unavailable
+  }
+}
+
+function loadPending(): PendingInvoice | null {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY)
+    if (!raw) return null
+    const p = JSON.parse(raw) as PendingInvoice
+    return p && p.externalId ? p : null
+  } catch {
+    return null
+  }
+}
+
 export function TopupPanel() {
   const [provider, setProvider] = useState<string>('heleket')
   const [amount, setAmount] = useState<number>(10)
@@ -71,6 +104,99 @@ export function TopupPanel() {
   )
   const topups = topupsData?.topups ?? []
 
+  /**
+   * Polls the provider until paid. Crediting to the bot DB happens
+   * server-side and is idempotent, so re-running after reload is safe.
+   */
+  async function pollInvoice(inv: PendingInvoice) {
+    setPay({ phase: 'waiting', url: inv.url })
+    const deadline = Date.now() + PAY_POLL_TOTAL_MS
+    while (Date.now() < deadline && !cancelled.current) {
+      try {
+        const s = await postJson<{ status: string; amount?: number }>(
+          '/api/topup/status',
+          { provider: inv.provider, externalId: inv.externalId },
+        )
+        if (s.status === 'PAID') {
+          savePending(null)
+          setPay({ phase: 'success', amount: s.amount ?? inv.amount })
+          mutate()
+          globalMutate('me')
+          return
+        }
+        if (s.status === 'FAILED') {
+          savePending(null)
+          setPay({ phase: 'error', message: 'Платёж не был завершён.' })
+          return
+        }
+      } catch {
+        // transient errors tolerated
+      }
+      await new Promise((r) => setTimeout(r, PAY_POLL_INTERVAL_MS))
+    }
+    if (!cancelled.current) {
+      setPay({
+        phase: 'error',
+        message:
+          'Не дождались подтверждения оплаты. Если вы оплатили — нажмите «Проверить оплату».',
+      })
+    }
+  }
+
+  // On mount: reconcile missed CryptoBot payments (paid while the user was
+  // away) and resume polling for a pending invoice from localStorage.
+  useEffect(() => {
+    cancelled.current = false
+    postJson<{ credited: number }>('/api/topup/reconcile', {})
+      .then((r) => {
+        if (r.credited > 0) {
+          mutate()
+          globalMutate('me')
+        }
+      })
+      .catch(() => {})
+    const pending = loadPending()
+    if (pending) void pollInvoice(pending)
+    return () => {
+      cancelled.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function checkNow() {
+    // Manual check: reconcile CryptoBot + re-check pending invoice.
+    setBusy(true)
+    try {
+      const r = await postJson<{ credited: number }>('/api/topup/reconcile', {})
+      const pending = loadPending()
+      if (pending) {
+        const s = await postJson<{ status: string; amount?: number }>(
+          '/api/topup/status',
+          { provider: pending.provider, externalId: pending.externalId },
+        )
+        if (s.status === 'PAID') {
+          savePending(null)
+          setPay({ phase: 'success', amount: s.amount ?? pending.amount })
+        }
+      }
+      if (r.credited > 0 || pending == null) {
+        setPay((prev) =>
+          prev.phase === 'success'
+            ? prev
+            : r.credited > 0
+              ? { phase: 'success', amount: 0 }
+              : prev,
+        )
+      }
+      mutate()
+      globalMutate('me')
+    } catch {
+      // ignore
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function createTopup() {
     if (amount < 1) return
     setBusy(true)
@@ -83,40 +209,15 @@ export function TopupPanel() {
         url: string
       }>('/api/topup/create', { provider, amount })
 
+      const pending: PendingInvoice = {
+        provider: inv.provider,
+        externalId: inv.externalId,
+        url: inv.url,
+        amount,
+      }
+      savePending(pending)
       window.open(inv.url, '_blank', 'noopener,noreferrer')
-      setPay({ phase: 'waiting', url: inv.url })
-
-      // Poll the provider until paid; crediting to the bot DB happens
-      // server-side (webhook + this polling, both idempotent).
-      const deadline = Date.now() + PAY_POLL_TOTAL_MS
-      while (Date.now() < deadline && !cancelled.current) {
-        await new Promise((r) => setTimeout(r, PAY_POLL_INTERVAL_MS))
-        try {
-          const s = await postJson<{ status: string; amount?: number }>(
-            '/api/topup/status',
-            { provider: inv.provider, externalId: inv.externalId },
-          )
-          if (s.status === 'PAID') {
-            setPay({ phase: 'success', amount: s.amount ?? amount })
-            mutate()
-            globalMutate('me')
-            return
-          }
-          if (s.status === 'FAILED') {
-            setPay({ phase: 'error', message: 'Платёж не был завершён.' })
-            return
-          }
-        } catch {
-          // transient errors tolerated
-        }
-      }
-      if (!cancelled.current) {
-        setPay({
-          phase: 'error',
-          message:
-            'Не дождались подтверждения оплаты. Если вы оплатили — баланс зачислится автоматически.',
-        })
-      }
+      await pollInvoice(pending)
     } catch (err) {
       setPay({
         phase: 'error',
@@ -230,7 +331,9 @@ export function TopupPanel() {
         {pay.phase === 'success' ? (
           <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-3 text-sm">
             <CheckCircle2 className="size-5 text-[var(--success)]" />
-            Оплата получена — {formatUsd(pay.amount)} зачислено на баланс.
+            {pay.amount > 0
+              ? `Оплата получена — ${formatUsd(pay.amount)} зачислено на баланс.`
+              : 'Оплата найдена и зачислена на баланс.'}
           </div>
         ) : null}
 
@@ -241,14 +344,24 @@ export function TopupPanel() {
           </p>
         ) : null}
 
-        <Button
-          className="mt-5 h-11 w-full rounded-full"
-          onClick={createTopup}
-          disabled={busy || amount < 1}
-        >
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-          {busy ? 'Создаём платёж…' : `Пополнить на ${formatUsd(amount)}`}
-        </Button>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <Button
+            className="h-11 flex-1 rounded-full"
+            onClick={createTopup}
+            disabled={busy || amount < 1}
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
+            {busy ? 'Подождите…' : `Пополнить на ${formatUsd(amount)}`}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 rounded-full bg-transparent"
+            onClick={checkNow}
+            disabled={busy}
+          >
+            Проверить оплату
+          </Button>
+        </div>
       </section>
 
       {topups.length > 0 ? (
