@@ -58,17 +58,6 @@ function extractCode(data: Record<string, unknown>): string | null {
   return null
 }
 
-function isPending(data: Record<string, unknown>): boolean {
-  const status = String(data.status ?? '').toUpperCase()
-  const code = data.code
-  return (
-    status === 'PENDING' ||
-    status === 'WAITING' ||
-    code === 'PENDING' ||
-    code == null
-  )
-}
-
 export function OrdersList() {
   const { data, error, isLoading, mutate } = useSWR<HistoryResponse>(
     'bot/history',
@@ -143,42 +132,66 @@ function OrderCard({
     const deadline = Date.now() + CODE_POLL_TOTAL_MS
     setCodeState({ phase: 'polling', secondsLeft: CODE_POLL_TOTAL_MS / 1000 })
 
-    while (Date.now() < deadline && !cancelled.current) {
-      try {
-        const res = await postBot<Record<string, unknown>>('request-code', {
-          purchaseId: purchase.id,
-        })
-        const code = extractCode(res)
-        if (code) {
-          setCodeState({ phase: 'success', code })
-          return
+    // Live countdown ticking every second, independent of network requests.
+    const ticker = setInterval(() => {
+      const secondsLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+      setCodeState((prev) =>
+        prev.phase === 'polling' ? { phase: 'polling', secondsLeft } : prev,
+      )
+    }, 1000)
+
+    let first = true
+    try {
+      while (Date.now() < deadline && !cancelled.current) {
+        try {
+          const res = await postBot<Record<string, unknown>>('request-code', {
+            purchaseId: purchase.id,
+            // Trigger the code request at GetMyTG only on the FIRST call;
+            // subsequent calls just check whether the code has arrived.
+            trigger: first,
+          })
+          first = false
+          const code = extractCode(res)
+          if (code) {
+            setCodeState({ phase: 'success', code })
+            return
+          }
+          const status = String(res.status ?? '').toUpperCase()
+          if (status === 'REFUND' || status === 'ERROR') {
+            setCodeState({
+              phase: 'error',
+              message:
+                status === 'REFUND'
+                  ? 'По этой покупке оформлен возврат — код недоступен.'
+                  : 'Покупка завершилась ошибкой — оформите возврат.',
+            })
+            return
+          }
+          // PENDING — keep waiting, never show it to the user.
+        } catch (err) {
+          // Transient errors during polling are tolerated; hard-fail on auth errors
+          if (
+            err instanceof Error &&
+            'status' in err &&
+            (err as { status: number }).status === 401
+          ) {
+            setCodeState({ phase: 'error', message: 'Сессия истекла — войдите заново.' })
+            return
+          }
         }
-        if (!isPending(res)) {
-          // Unknown non-pending answer without a code — keep trying until deadline
-        }
-      } catch (err) {
-        // Transient errors during polling are tolerated; hard-fail on auth errors
-        if (
-          err instanceof Error &&
-          'status' in err &&
-          (err as { status: number }).status === 401
-        ) {
-          setCodeState({ phase: 'error', message: 'Сессия истекла — войдите заново.' })
-          return
-        }
+
+        await new Promise((r) => setTimeout(r, CODE_POLL_INTERVAL_MS))
       }
 
-      const secondsLeft = Math.max(0, Math.round((deadline - Date.now()) / 1000))
-      setCodeState({ phase: 'polling', secondsLeft })
-      await new Promise((r) => setTimeout(r, CODE_POLL_INTERVAL_MS))
-    }
-
-    if (!cancelled.current) {
-      setCodeState({
-        phase: 'error',
-        message:
-          'Код не пришёл за 120 секунд. Запросите код в приложении Telegram ещё раз и повторите.',
-      })
+      if (!cancelled.current) {
+        setCodeState({
+          phase: 'error',
+          message:
+            'Код не пришёл за 120 секунд. Нажмите «Повторить» — поиск кода запустится заново.',
+        })
+      }
+    } finally {
+      clearInterval(ticker)
     }
   }
 

@@ -64,8 +64,16 @@ const handlers: Record<string, Handler> = {
     return { purchases: (data.items ?? []).map(mapPurchase) }
   },
 
+  /**
+   * Two-phase code retrieval so PENDING is never shown to the user:
+   *  - body.trigger === true  → fire the code request at GetMyTG ONCE
+   *  - body.trigger === false → only check whether the code has arrived
+   * The client calls trigger once, then polls status for up to 120s.
+   */
   'request-code': async (_telegramId, body) => {
     const id = asId(body.purchaseId)
+    const trigger = body.trigger === true
+
     // 1. If the code is already stored, return it immediately.
     const existing = await gmt.purchase(id)
     if (existing.verification?.code) {
@@ -78,19 +86,26 @@ const handlers: Record<string, Handler> = {
     if (existing.status === 'REFUND' || existing.status === 'ERROR') {
       return { code: null, status: existing.status }
     }
-    // 2. Trigger code retrieval. A 409 means it's already in progress.
-    try {
-      const res = await gmt.requestCode(id)
-      if (res.purchase?.verification?.code) {
-        return {
-          code: res.purchase.verification.code,
-          password: res.purchase.verification.password ?? null,
-          status: 'SUCCESS',
+
+    // 2. Trigger code retrieval exactly once (first client call).
+    //    409/429 mean a request is already in progress — that's fine.
+    if (trigger) {
+      try {
+        const res = await gmt.requestCode(id)
+        if (res.purchase?.verification?.code) {
+          return {
+            code: res.purchase.verification.code,
+            password: res.purchase.verification.password ?? null,
+            status: 'SUCCESS',
+          }
+        }
+      } catch (err) {
+        if (!(err instanceof GmtError && (err.status === 409 || err.status === 429))) {
+          throw err
         }
       }
-    } catch (err) {
-      if (!(err instanceof GmtError && err.status === 409)) throw err
     }
+
     // 3. Still pending — the client keeps polling for up to 120s.
     return { code: null, status: 'PENDING' }
   },
