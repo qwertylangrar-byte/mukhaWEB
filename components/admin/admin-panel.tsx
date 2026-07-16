@@ -126,6 +126,7 @@ interface AdminPurchase {
   countryCode?: string | null
   phoneNumber?: string | null
   price?: string | number | null
+  chargedPrice?: string | number | null
   status?: string | null
   createdAt?: string | null
   quantity?: number | null
@@ -149,8 +150,12 @@ function UserTab() {
     setUser(null)
     setPurchases(null)
     try {
-      const res = await postAdmin<{ user?: AdminUser }>('user', { telegramId })
-      setUser({ ...(res.user ?? {}), telegramId })
+      const res = await postAdmin<{ user?: AdminUser } & AdminUser>('user', {
+        telegramId,
+      })
+      // The bridge may return the user nested ({ user: {...} }) or flat.
+      const u = (res.user ?? res) as AdminUser
+      setUser({ ...u, telegramId })
       const hist = await postAdmin<{ purchases?: AdminPurchase[] }>(
         'purchases',
         { telegramId },
@@ -362,7 +367,9 @@ function UserPurchases({ purchases }: { purchases: AdminPurchase[] }) {
                   </td>
                   <td className="py-2.5 pr-4 tabular-nums">{p.quantity ?? 1}</td>
                   <td className="py-2.5 pr-4 tabular-nums">
-                    {p.price != null ? formatUsd(p.price) : '—'}
+                    {(p.price ?? p.chargedPrice) != null
+                      ? formatUsd(p.price ?? p.chargedPrice)
+                      : '—'}
                   </td>
                   <td className="py-2.5 pr-4">
                     <span
