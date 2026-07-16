@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: 'О нас — MukhaTG | About us',
   description:
     'MukhaTG — сервис продажи Telegram-аккаунтов с мгновенной выдачей. MukhaTG — Telegram account selling service with instant delivery. Contacts: bot, support and LOLZ forum thread.',
+  alternates: { canonical: '/about' },
 }
 
 export default function AboutPage() {
