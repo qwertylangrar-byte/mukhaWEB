@@ -232,7 +232,9 @@ function OrderCard({
           <div>
             <p className="font-semibold">
               {isBulk
-                ? `Опт · ${purchase.quantity ?? '—'} шт.`
+                ? purchase.quantity
+                  ? `Оптовый заказ · ${purchase.quantity} шт.`
+                  : 'Оптовый заказ'
                 : purchase.phoneNumber || 'Аккаунт'}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -333,6 +335,7 @@ function OrderCard({
           <Button
             variant="outline"
             size="sm"
+            nativeButton={false}
             className="rounded-full bg-transparent"
             render={
               <a href={purchase.archiveUrl} download>

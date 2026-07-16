@@ -18,6 +18,7 @@ type Handler = (
 ) => Promise<unknown>
 
 function mapPurchase(p: GmtPurchase) {
+  const isBulk = p.purchase_type === 'BULK'
   return {
     id: p.id,
     phoneNumber: p.phone_number,
@@ -26,7 +27,8 @@ function mapPurchase(p: GmtPurchase) {
     price: p.price?.amount ?? null,
     status: p.status,
     createdAt: p.created_at,
-    type: p.purchase_type === 'BULK' ? 'bulk' : 'single',
+    type: isBulk ? 'bulk' : 'single',
+    archiveUrl: isBulk && p.status === 'SUCCESS' ? `/api/download/${p.id}` : null,
     code: p.verification?.code ?? null,
     password: p.verification?.password ?? null,
   }
