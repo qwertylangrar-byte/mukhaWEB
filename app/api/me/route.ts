@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { bridge } from '@/lib/bridge'
-import { isAdminId } from '@/lib/admin'
 import { getFlags } from '@/lib/flags'
 
 /**
  * Session + balance. Balance comes from the BOT database (same number the
  * user sees in Telegram) via the bridge — NOT from the GetMyTG API balance.
- * Also exposes feature flags (maintenance blocks) and admin status.
+ * Also exposes feature flags (maintenance blocks).
  */
 export async function GET() {
   const session = await getSession()
@@ -18,7 +17,6 @@ export async function GET() {
   const flags = await getFlags()
   const base = {
     authenticated: true,
-    isAdmin: isAdminId(session.telegramId),
     flags,
     session: {
       telegramId: session.telegramId,

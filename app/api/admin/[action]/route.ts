@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server'
-import { getAdminSession } from '@/lib/admin'
+import {
+  checkAdminCredentials,
+  clearAdminCookie,
+  isAdminAuthed,
+  setAdminCookie,
+} from '@/lib/admin'
 import { bridge, bridgeFetch, BridgeError } from '@/lib/bridge'
 import { getFlags, setFlags, type FeatureFlags } from '@/lib/flags'
 
 export const runtime = 'nodejs'
 
 /**
- * Admin API. All actions require the session's telegramId to be listed in
- * ADMIN_TELEGRAM_IDS. Data operations go through the bot bridge, so the
- * bot database remains the single source of truth.
+ * Admin API. Auth: login/password (ADMIN_LOGIN / ADMIN_PASSWORD env vars)
+ * exchanged for a signed cookie. Data operations go through the bot bridge,
+ * so the bot database remains the single source of truth.
  *
  * Bridge actions used (must exist on the bot side):
  *  - user            { telegramId }                        — always available
@@ -19,10 +24,7 @@ export const runtime = 'nodejs'
  *  - admin-debit     { telegramId, amount, reason }        — NEW (take balance)
  */
 
-type Handler = (
-  adminId: number,
-  body: Record<string, unknown>,
-) => Promise<Record<string, unknown>>
+type Handler = (body: Record<string, unknown>) => Promise<Record<string, unknown>>
 
 function num(v: unknown): number {
   const n = Number(v)
@@ -31,7 +33,7 @@ function num(v: unknown): number {
 
 const handlers: Record<string, Handler> = {
   /** Look up a single user by telegramId (works with the current bridge). */
-  user: async (_admin, body) => {
+  user: async (body) => {
     const telegramId = num(body.telegramId)
     if (!telegramId) throw new BridgeError(400, 'Укажите Telegram ID')
     const res = await bridge.user(telegramId)
@@ -39,14 +41,14 @@ const handlers: Record<string, Handler> = {
   },
 
   /** List/search users — requires the new admin-users bridge action. */
-  users: async (_admin, body) => {
+  users: async (body) => {
     const query = typeof body.query === 'string' ? body.query.trim() : ''
     const limit = Math.min(Math.max(num(body.limit) || 50, 1), 200)
     return bridgeFetch('admin-users', { query, limit })
   },
 
   /** Purchases of a specific user. */
-  purchases: async (_admin, body) => {
+  purchases: async (body) => {
     const telegramId = num(body.telegramId)
     if (!telegramId) throw new BridgeError(400, 'Укажите Telegram ID')
     return bridge.history(telegramId, Math.min(num(body.limit) || 50, 200)) as Promise<
@@ -55,7 +57,7 @@ const handlers: Record<string, Handler> = {
   },
 
   /** Top-ups of a specific user. */
-  topups: async (_admin, body) => {
+  topups: async (body) => {
     const telegramId = num(body.telegramId)
     if (!telegramId) throw new BridgeError(400, 'Укажите Telegram ID')
     return bridge.topups(telegramId, Math.min(num(body.limit) || 50, 200)) as Promise<
@@ -64,7 +66,7 @@ const handlers: Record<string, Handler> = {
   },
 
   /** Give or take balance — requires admin-credit / admin-debit on the bot. */
-  balance: async (adminId, body) => {
+  balance: async (body) => {
     const telegramId = num(body.telegramId)
     const amount = Math.round(num(body.amount) * 100) / 100
     const op = body.op === 'debit' ? 'debit' : 'credit'
@@ -72,7 +74,7 @@ const handlers: Record<string, Handler> = {
     if (amount <= 0) throw new BridgeError(400, 'Сумма должна быть больше нуля')
     const reason =
       (typeof body.reason === 'string' && body.reason.trim().slice(0, 200)) ||
-      `Админ ${adminId}: ${op === 'credit' ? 'начисление' : 'списание'} с сайта`
+      `Админ-панель: ${op === 'credit' ? 'начисление' : 'списание'} с сайта`
     return bridgeFetch(`admin-${op}`, { telegramId, amount, reason }, 30000)
   },
 
@@ -83,7 +85,7 @@ const handlers: Record<string, Handler> = {
   },
 
   /** Update feature blocks. */
-  'flags-set': async (_admin, body) => {
+  'flags-set': async (body) => {
     const update: Partial<FeatureFlags> = {}
     for (const key of ['purchases', 'bulk', 'topup', 'codes'] as const) {
       if (typeof body[key] === 'boolean') update[key] = body[key]
@@ -98,16 +100,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ action: string }> },
 ) {
-  const session = await getAdminSession()
-  if (!session) {
-    return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
-  }
-
   const { action } = await params
-  const handler = handlers[action]
-  if (!handler) {
-    return NextResponse.json({ error: 'Неизвестное действие' }, { status: 404 })
-  }
 
   let body: Record<string, unknown> = {}
   try {
@@ -116,8 +109,41 @@ export async function POST(
     // empty body is fine
   }
 
+  // --- auth actions (no admin cookie required) ---
+  if (action === 'login') {
+    const login = typeof body.login === 'string' ? body.login : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    if (!checkAdminCredentials(login, password)) {
+      return NextResponse.json(
+        { error: 'Неверный логин или пароль' },
+        { status: 401 },
+      )
+    }
+    await setAdminCookie()
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'logout') {
+    await clearAdminCookie()
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'session') {
+    return NextResponse.json({ authed: await isAdminAuthed() })
+  }
+
+  // --- everything else requires the admin cookie ---
+  if (!(await isAdminAuthed())) {
+    return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
+  }
+
+  const handler = handlers[action]
+  if (!handler) {
+    return NextResponse.json({ error: 'Неизвестное действие' }, { status: 404 })
+  }
+
   try {
-    const result = await handler(session.telegramId, body)
+    const result = await handler(body)
     return NextResponse.json(result)
   } catch (err) {
     if (err instanceof BridgeError) {
