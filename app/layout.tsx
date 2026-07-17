@@ -4,82 +4,15 @@ import { Inter } from 'next/font/google'
 import { cookies, headers } from 'next/headers'
 import { LanguageProvider } from '@/lib/i18n'
 import { LANG_COOKIE, type Lang } from '@/lib/lang'
-import { FloatingBotButton } from '@/components/floating-bot-button'
 import './globals.css'
 
 const _inter = Inter({ subsets: ['latin', 'cyrillic'] })
 
-// Production URL for canonical/OG links (Vercel injects this at build time).
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : 'https://mukhatg.vercel.app'
-
-const title = 'MukhaTG — магазин Telegram-аккаунтов | Telegram Account Store'
-const description =
-  'Покупайте отлежавшиеся Telegram-аккаунты по странам — поштучно или оптом. Мгновенная выдача, Session + Tdata, коды входа. Buy aged Telegram accounts by country with instant delivery.'
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: title,
-    template: '%s — MukhaTG',
-  },
-  description,
-  applicationName: 'MukhaTG',
+  title: 'MukhaTG — магазин Telegram-аккаунтов | Telegram account store',
+  description:
+    'Покупайте отлежавшиеся Telegram-аккаунты по странам поштучно или оптом. Buy aged Telegram accounts by country — instant delivery, Session + Tdata and login codes.',
   generator: 'v0.app',
-  keywords: [
-    'MukhaTG',
-    'Telegram аккаунты',
-    'купить Telegram аккаунт',
-    'Telegram аккаунты оптом',
-    'отлежавшиеся аккаунты',
-    'Session Tdata',
-    'buy Telegram accounts',
-    'aged Telegram accounts',
-    'Telegram account store',
-  ],
-  authors: [{ name: 'MukhaTG' }],
-  creator: 'MukhaTG',
-  publisher: 'MukhaTG',
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    type: 'website',
-    siteName: 'MukhaTG',
-    title,
-    description,
-    url: siteUrl,
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'MukhaTG — магазин Telegram-аккаунтов',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title,
-    description,
-    images: ['/og-image.png'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-      'max-video-preview': -1,
-    },
-  },
-  icons: {
-    icon: '/icon.png',
-    apple: '/icon.png',
-  },
 }
 
 export const viewport: Viewport = {
@@ -110,33 +43,10 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const lang = await detectLang()
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'MukhaTG',
-    url: siteUrl,
-    logo: `${siteUrl}/icon.png`,
-    description,
-    sameAs: [
-      'https://t.me/MukhaTGbot',
-      'https://t.me/MukhaSupport',
-      'https://zelenka.guru/threads/10143996/',
-    ],
-    contactPoint: {
-      '@type': 'ContactPoint',
-      contactType: 'customer support',
-      url: 'https://t.me/MukhaSupport',
-    },
-  }
   return (
     <html lang={lang} className="bg-background">
       <body className="font-sans antialiased">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
         <LanguageProvider initialLang={lang}>{children}</LanguageProvider>
-        <FloatingBotButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
