@@ -107,36 +107,3 @@
     background-repeat: no-repeat;
   }
 }
-
-@layer utilities {
-  /* Sleek, minimal scrollbar that matches the dark navy theme */
-  .fancy-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: oklch(0.66 0.16 248 / 45%) transparent;
-  }
-  .fancy-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  .fancy-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .fancy-scroll::-webkit-scrollbar-thumb {
-    border-radius: 9999px;
-    background: linear-gradient(
-      to bottom,
-      oklch(0.66 0.16 248 / 55%),
-      oklch(0.55 0.14 265 / 55%)
-    );
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-  .fancy-scroll::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(
-      to bottom,
-      oklch(0.66 0.16 248 / 80%),
-      oklch(0.55 0.14 265 / 80%)
-    );
-    background-clip: padding-box;
-  }
-}

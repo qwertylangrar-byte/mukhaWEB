@@ -5,11 +5,9 @@ import Link from 'next/link'
 import {
   AlertCircle,
   AlertTriangle,
-  Archive,
   CheckCircle2,
   ChevronDown,
   Copy,
-  Download,
   KeyRound,
   Loader2,
   MonitorSmartphone,
@@ -45,30 +43,17 @@ function InfoBlock({ mode }: { mode: Mode }) {
   const [showRecs, setShowRecs] = useState(false)
   return (
     <div className="mt-5 space-y-3">
-      {/* Single: screen recording warning · Bulk: no-refund warning */}
-      {mode === 'single' ? (
-        <div
-          className="flex items-start gap-2.5 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3"
-          role="alert"
-        >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <p className="text-xs leading-relaxed">
-            <span className="font-semibold">{t.purchase.warnRecord}</span>{' '}
-            {t.purchase.warnRecordSuffix}
-          </p>
-        </div>
-      ) : (
-        <div
-          className="flex items-start gap-2.5 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3"
-          role="alert"
-        >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <p className="text-xs leading-relaxed">
-            <span className="font-semibold">{t.purchase.bulkNoRefund}</span>{' '}
-            {t.purchase.bulkNoRefundSuffix}
-          </p>
-        </div>
-      )}
+      {/* Screen recording warning */}
+      <div
+        className="flex items-start gap-2.5 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3"
+        role="alert"
+      >
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+        <p className="text-xs leading-relaxed">
+          <span className="font-semibold">{t.purchase.warnRecord}</span>{' '}
+          {t.purchase.warnRecordSuffix}
+        </p>
+      </div>
 
       {/* Device warning / bulk format note */}
       {mode === 'single' ? (
@@ -308,22 +293,12 @@ export function PurchaseDialog({
       aria-modal="true"
       onClick={(e) => e.target === e.currentTarget && !busy && onClose()}
     >
-      <div
-        className={
-          'fancy-scroll max-h-[90vh] w-full overflow-y-auto rounded-3xl border border-border/70 bg-card shadow-2xl ' +
-          (done ? 'max-w-2xl' : 'max-w-lg')
-        }
-      >
-        {/* Sticky gradient header */}
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-b from-card to-card/80 px-6 py-5 backdrop-blur-xl">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-border/70 bg-card p-6 shadow-2xl">
+        <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <span className="rounded-2xl border border-border/60 bg-background/50 p-2">
-              <Flag code={country.code} className="h-7 w-10" />
-            </span>
+            <Flag code={country.code} className="h-7 w-10" />
             <div>
-              <h2 className="text-lg font-semibold leading-tight">
-                {country.name}
-              </h2>
+              <h2 className="text-lg font-semibold">{country.name}</h2>
               <p className="text-xs text-muted-foreground">
                 {t.purchase.stockLine(country.available, formatUsd(country.price))}
               </p>
@@ -339,8 +314,6 @@ export function PurchaseDialog({
             <X className="size-4" />
           </Button>
         </div>
-
-        <div className="p-6 pt-5">
 
         {done ? (
           <div className="mt-6">
@@ -384,18 +357,18 @@ export function PurchaseDialog({
                 </div>
 
                 {codeState.phase === 'success' ? (
-                  <div className="flex flex-col items-center gap-3 rounded-3xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-6 text-center">
-                    <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-[var(--success)]">
-                      <KeyRound className="size-3.5" />
+                  <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-3">
+                    <KeyRound className="size-4 shrink-0 text-[var(--success)]" />
+                    <span className="text-sm text-muted-foreground">
                       {t.purchase.loginCode}
                     </span>
-                    <span className="font-mono text-4xl font-bold tracking-[0.2em] tabular-nums">
+                    <span className="font-mono text-xl font-bold tracking-widest">
                       {codeState.code}
                     </span>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="rounded-full bg-transparent"
+                      className="ml-auto rounded-full"
                       onClick={() => copyText(codeState.code)}
                     >
                       <Copy className="size-4" />
@@ -447,22 +420,12 @@ export function PurchaseDialog({
 
             {/* Bulk: archive link */}
             {done.bulk?.archiveUrl ? (
-              <div className="mt-4 flex flex-col items-center gap-3 rounded-3xl border border-[color-mix(in_oklch,var(--success)_40%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-4 py-6 text-center">
-                <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-[var(--success)]">
-                  <Archive className="size-3.5" />
-                  TData + Session
-                </span>
-                <Button
-                  nativeButton={false}
-                  className="h-11 rounded-full px-6"
-                  render={
-                    <a href={done.bulk.archiveUrl} download>
-                      <Download className="size-4" />
-                      {t.purchase.downloadArchive}
-                    </a>
-                  }
-                />
-              </div>
+              <a
+                href={done.bulk.archiveUrl}
+                className="mt-3 block text-center text-sm text-primary underline underline-offset-2"
+              >
+                {t.purchase.downloadArchive}
+              </a>
             ) : done.bulk && done.bulk.status !== 'SUCCESS' ? (
               <p className="mt-3 text-center text-xs text-muted-foreground">
                 {t.purchase.archiveLater}
@@ -570,7 +533,6 @@ export function PurchaseDialog({
             </Button>
           </>
         )}
-        </div>
       </div>
     </div>
   )

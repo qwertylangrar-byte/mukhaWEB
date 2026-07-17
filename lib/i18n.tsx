@@ -154,14 +154,11 @@ const ru = {
       'Код не пришёл за 120 секунд. Убедитесь, что вы ввели номер в Telegram и появилось «код отправлен», затем нажмите «Повторить».',
     downloadArchive: 'Скачать архив с аккаунтами (TData + Session)',
     archiveLater: 'Архив ещё готовится — ссылка появится в разделе «Покупки».',
-    goToOrders: 'Перейти к ��окупкам',
+    goToOrders: 'Перейти к покупкам',
     buyFailed: 'Не удалось купить',
     warnRecord: 'Обязательно включите запись экрана перед входом в аккаунт.',
     warnRecordSuffix:
       'Это поможет получить замену в случае непредвиденных обстоятельств.',
-    bulkNoRefund: 'Возврат по оптовой покупке не предусмотрен.',
-    bulkNoRefundSuffix:
-      'Внимательно проверьте количество перед оплатой — вернуть средства за оптовый заказ нельзя.',
     deviceNote1: 'Вход — по коду из Telegram.',
     deviceNote2: 'Заходите только с компьютера.',
     deviceNote3: 'На телефоне — только через нативное приложение, например',
@@ -269,13 +266,13 @@ const ru = {
       { value: '70+', label: 'стран в каталоге' },
       { value: '24/7', label: 'автоматическая выдача' },
       { value: '2', label: 'способа оплаты криптой' },
-      { value: '1', label: 'общий бала��с с ботом' },
+      { value: '1', label: 'общий баланс с ботом' },
     ],
     whyTitle: 'Почему выбирают нас',
     values: [
       {
         title: 'Мгновенная выдача',
-        text: 'Аккаунты выдаются автом��тически сразу по��ле оплаты — без ручной обработки и ожидания.',
+        text: 'Аккаунты выдаются автоматически сразу по��ле оплаты — без ручной обработки и ожидания.',
       },
       {
         title: 'Десятки стран',
@@ -458,9 +455,6 @@ const en: Dict = {
     buyFailed: 'Purchase failed',
     warnRecord: 'Be sure to start a screen recording before logging into the account.',
     warnRecordSuffix: 'It will help you get a replacement in case of unforeseen issues.',
-    bulkNoRefund: 'Bulk purchases are non-refundable.',
-    bulkNoRefundSuffix:
-      'Double-check the quantity before paying — funds for bulk orders cannot be returned.',
     deviceNote1: 'Login is via a code from Telegram.',
     deviceNote2: 'Only log in from a computer.',
     deviceNote3: 'On a phone — only via a native app such as',

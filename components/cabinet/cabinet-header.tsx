@@ -61,7 +61,7 @@ export function CabinetHeader({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition-colors',
+                  'rounded-full px-3.5 py-1.5 text-sm transition-colors',
                   pathname.startsWith(item.href)
                     ? 'bg-primary font-medium text-primary-foreground shadow-[0_0_16px_-4px] shadow-primary/60'
                     : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground',
@@ -103,7 +103,7 @@ export function CabinetHeader({
 
       {/* Mobile nav */}
       <nav
-        className="fancy-scroll flex items-center gap-1 overflow-x-auto border-t border-border/40 px-4 py-2 md:hidden"
+        className="flex items-center gap-1 overflow-x-auto border-t border-border/40 px-4 py-2 md:hidden"
         aria-label={t.nav.sections}
       >
         {nav.map((item) => (
