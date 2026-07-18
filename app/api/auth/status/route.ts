@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
 
   // Устанавливаем сессионную cookie — без неё браузер остаётся неавторизованным
   // Устанавливаем сессионную cookie — без неё браузер остаётся неавторизованным
+  // Устанавливаем сессионную cookie — без неё браузер остаётся неавторизованным
   await setSessionCookie({ telegramId, username, firstName })
 
   return NextResponse.json({ status: 'confirmed' })
+}
