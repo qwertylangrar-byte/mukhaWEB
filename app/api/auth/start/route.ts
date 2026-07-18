@@ -10,7 +10,7 @@ export async function POST() {
       { status: 503 },
     )
   }
-    const code = randomBytes(24).toString('base64url')
+  const code = randomBytes(24).toString('base64url')
 
   // Регистрируем код в боте, НЕ блокируя ответ.
   void bridge.loginStart(code).catch((err) => {
