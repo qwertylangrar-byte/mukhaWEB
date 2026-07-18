@@ -12,9 +12,11 @@ export async function GET(request: NextRequest) {
   let entry
   try {
     entry = await bridge.loginStatus(code)
-  } catch {
-    // мост временно недоступен — просим браузер продолжать ждать
-    return NextResponse.json({ status: 'pending' })
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Не удалось связаться с ботом.'
+    console.log('[v0] auth/status bridge error:', message)
+    return NextResponse.json({ status: 'error', error: message }, { status: 502 })
   }
 
   if (entry.status === 'expired') {
