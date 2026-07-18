@@ -122,4 +122,12 @@ export const bridge = {
     reason: string,
     externalId: string,
   ) => bridgeFetch('debit', { telegramId, amount, reason, externalId }, 30000),
+  loginStart: (code: string) => bridgeFetch('login-start', { code }),
+  loginStatus: (code: string) =>
+    bridgeFetch<{
+      status: 'pending' | 'confirmed' | 'expired'
+      telegramId?: number
+      username?: string
+      firstName?: string
+    }>('login-status', { code }),
 }
