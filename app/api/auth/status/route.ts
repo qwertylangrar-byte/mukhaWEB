@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { deletePendingLogin, getPendingLogin } from '@/lib/login-store'
 import { setSessionCookie } from '@/lib/session'
 import { bridge } from '@/lib/bridge'
 

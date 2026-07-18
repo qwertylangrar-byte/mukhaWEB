@@ -11,7 +11,14 @@ export async function POST() {
     )
   }
   const code = randomBytes(24).toString('base64url')
-  createPendingLogin(code)
+    try {
+    await bridge.loginStart(code)
+  } catch {
+    return NextResponse.json(
+      { error: 'Сервис временно недоступен, попробуйте позже.' },
+      { status: 503 },
+    )
+  }
   return NextResponse.json({
     code,
     link: `https://t.me/${botUsername.replace(/^@/, '')}?start=web_${code}`,
