@@ -33,5 +33,7 @@ export async function GET(request: NextRequest) {
     // non-fatal: user record will be created on the next bridge call
   }
 
+  // Устанавливаем сессионную cookie — без неё браузер остаётся неавторизованным
+  await setSessionCookie({ telegramId, username, firstName })
+
   return NextResponse.json({ status: 'confirmed' })
-}
