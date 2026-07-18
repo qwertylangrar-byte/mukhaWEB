@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto'
 import { NextResponse } from 'next/server'
-import { createPendingLogin } from '@/lib/login-store'
+import { bridge } from '@/lib/bridge'
 
 export async function POST() {
   const botUsername = process.env.TELEGRAM_BOT_USERNAME
