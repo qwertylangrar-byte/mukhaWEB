@@ -61,7 +61,10 @@ export function LoginCard() {
             `/api/auth/status?code=${encodeURIComponent(code)}`,
             { cache: 'no-store' },
           )
-          const status = (await statusRes.json()) as { status?: string }
+          const status = (await statusRes.json()) as {
+            status?: string
+            error?: string
+          }
           if (status.status === 'confirmed') {
             stopPolling()
             setState('confirmed')
@@ -71,6 +74,10 @@ export function LoginCard() {
             stopPolling()
             setState('error')
             setError(t.login.codeExpired)
+          } else if (status.status === 'error') {
+            stopPolling()
+            setState('error')
+            setError(status.error ?? t.login.loginError)
           }
         } catch {
           // network hiccup — keep polling
