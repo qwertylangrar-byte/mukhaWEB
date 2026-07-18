@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing code' }, { status: 400 })
   }
 
-  const entry = getPendingLogin(code)
+
     let entry
   try {
     entry = await bridge.loginStatus(code)
