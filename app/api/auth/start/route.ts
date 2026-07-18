@@ -10,15 +10,16 @@ export async function POST() {
       { status: 503 },
     )
   }
-  const code = randomBytes(24).toString('base64url')
-    try {
-    await bridge.loginStart(code)
-  } catch {
-    return NextResponse.json(
-      { error: 'Сервис временно недоступен, попробуйте позже.' },
-      { status: 503 },
+    const code = randomBytes(24).toString('base64url')
+
+  // Регистрируем код в боте, НЕ блокируя ответ.
+  void bridge.loginStart(code).catch((err) => {
+    console.log(
+      '[v0] auth/start: loginStart failed:',
+      err instanceof Error ? err.message : err,
     )
-  }
+  })
+
   return NextResponse.json({
     code,
     link: `https://t.me/${botUsername.replace(/^@/, '')}?start=web_${code}`,
