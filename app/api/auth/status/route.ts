@@ -10,17 +10,22 @@ export async function GET(request: NextRequest) {
   }
 
   const entry = getPendingLogin(code)
-  if (!entry) {
-    return NextResponse.json({ status: 'expired' })
+    let entry
+  try {
+    entry = await bridge.loginStatus(code)
+  } catch {
+    // мост временно недоступен — просим браузер продолжать ждать
+    return NextResponse.json({ status: 'pending' })
   }
 
-  if (!entry.confirmed || typeof entry.telegramId !== 'number') {
+  if (entry.status === 'expired') {
+    return NextResponse.json({ status: 'expired' })
+  }
+  if (entry.status !== 'confirmed' || typeof entry.telegramId !== 'number') {
     return NextResponse.json({ status: 'pending' })
   }
 
   const { telegramId, username, firstName } = entry
-  deletePendingLogin(code)
-  await setSessionCookie({ telegramId, username, firstName })
 
   // "Registration" in the bot DB happens on first login
   try {
