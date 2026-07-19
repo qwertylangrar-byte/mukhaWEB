@@ -39,6 +39,7 @@ const ru = {
     catalog: 'Каталог',
     support: 'Поддержка',
     login: 'Войти',
+    api: 'API',
   },
   landing: {
     badge: 'Отлежавшиеся Telegram-аккаунты',
@@ -352,6 +353,7 @@ const en: Dict = {
     catalog: 'Catalog',
     support: 'Support',
     login: 'Sign in',
+    api: 'API',
   },
   landing: {
     badge: 'Aged Telegram accounts',

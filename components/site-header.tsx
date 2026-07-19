@@ -30,6 +30,12 @@ export function SiteHeader() {
           >
             {t.nav.about}
           </Link>
+          <Link
+            href="/developers"
+            className="rounded-full px-3.5 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-white/[0.07] hover:text-foreground"
+          >
+            {t.nav.api}
+          </Link>
           <a
             href={SUPPORT_URL}
             target="_blank"
