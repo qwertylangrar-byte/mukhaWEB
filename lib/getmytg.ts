@@ -107,7 +107,11 @@ async function gmtFetch<T>(
 ): Promise<T> {
   const key = getApiKey()
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
   let res: Response
   try {
     res = await fetch(`${API_BASE}${path}`, {
@@ -120,8 +124,16 @@ async function gmtFetch<T>(
       cache: 'no-store',
       signal: controller.signal,
     })
-  } catch {
-    throw new GmtError(503, 'Не удалось связаться с GetMyTG API.')
+  } catch (e) {
+    // Surface the real cause instead of masking every failure with one message.
+    if (timedOut) {
+      throw new GmtError(
+        504,
+        `GetMyTG API не ответил за ${Math.round(timeoutMs / 1000)} с (${init.method ?? 'GET'} ${path}).`,
+      )
+    }
+    const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e)
+    throw new GmtError(503, `Не удалось связаться с GetMyTG API (${detail}).`)
   } finally {
     clearTimeout(timer)
   }
@@ -164,10 +176,15 @@ export const gmt = {
   profile: () => gmtFetch<GmtProfile>('/profile/'),
 
   createPurchase: (countryCode: string) =>
-    gmtFetch<GmtPurchase>('/purchases/', {
-      method: 'POST',
-      body: { country_code: countryCode.toUpperCase() },
-    }),
+    gmtFetch<GmtPurchase>(
+      '/purchases/',
+      {
+        method: 'POST',
+        body: { country_code: countryCode.toUpperCase() },
+      },
+      // Reserving an account from the provider is slower than a catalog read.
+      90000,
+    ),
 
   purchase: (purchaseId: number | string) =>
     gmtFetch<GmtPurchase>(`/purchases/${purchaseId}`),
@@ -196,10 +213,14 @@ export const gmt = {
     }),
 
   createBulk: (countryCode: string, quantity: number) =>
-    gmtFetch<GmtBulkPurchase>('/purchases/bulk', {
-      method: 'POST',
-      body: { country_code: countryCode.toUpperCase(), quantity },
-    }),
+    gmtFetch<GmtBulkPurchase>(
+      '/purchases/bulk',
+      {
+        method: 'POST',
+        body: { country_code: countryCode.toUpperCase(), quantity },
+      },
+      90000,
+    ),
 
   bulkStatus: (bulkPurchaseId: number | string) =>
     gmtFetch<GmtBulkPurchase>(`/purchases/bulk/${bulkPurchaseId}`),
