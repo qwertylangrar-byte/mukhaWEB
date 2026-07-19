@@ -19,7 +19,7 @@ import { useLang } from '@/lib/i18n'
 
 const CONTACT_META = [
   { icon: Send, handle: '@MukhaTGbot', href: 'https://t.me/MukhaTGbot' },
-  { icon: Headset, handle: '@MukhaSupport', href: 'https://t.me/MukhaSupport' },
+  { icon: Headset, handle: '@MukhaSupp', href: 'https://t.me/MukhaSupp' },
   {
     icon: MessageCircle,
     handle: 'zelenka.guru',
@@ -197,7 +197,7 @@ export function AboutContent() {
               {t.about.footerBot}
             </a>
             <a
-              href="https://t.me/MukhaSupport"
+              href="https://t.me/MukhaSupp"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-foreground"
