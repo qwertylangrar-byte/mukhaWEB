@@ -1,0 +1,376 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { CodeBlock } from '@/components/developers/code-block'
+
+interface Section {
+  id: string
+  title: string
+}
+
+const SECTIONS: Section[] = [
+  { id: 'intro', title: 'Введение' },
+  { id: 'auth', title: 'Авторизация' },
+  { id: 'pricing', title: 'Цены и скидки' },
+  { id: 'errors', title: 'Ошибки' },
+  { id: 'health', title: 'Проверка статуса' },
+  { id: 'catalog', title: 'Каталог' },
+  { id: 'profile', title: 'Профиль и баланс' },
+  { id: 'purchase', title: 'Покупка аккаунта' },
+  { id: 'code', title: 'Получение кода' },
+  { id: 'refund', title: 'Возврат средств' },
+  { id: 'bulk', title: 'Оптовые заказы' },
+  { id: 'webhooks', title: 'Вебхуки' },
+]
+
+function H({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <h2
+      id={id}
+      className="scroll-mt-28 border-b border-white/10 pb-2 text-xl font-semibold text-foreground"
+    >
+      {children}
+    </h2>
+  )
+}
+
+export function DocsContent({ baseUrl }: { baseUrl: string }) {
+  const [active, setActive] = useState('intro')
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(entry.target.id)
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    )
+    for (const s of SECTIONS) {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    }
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div className="mx-auto flex max-w-6xl gap-10 px-4">
+      {/* Sidebar */}
+      <aside className="sticky top-28 hidden h-[calc(100vh-8rem)] w-56 shrink-0 overflow-y-auto py-2 lg:block">
+        <nav className="flex flex-col gap-1">
+          {SECTIONS.map((s) => (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                active === s.id
+                  ? 'bg-primary/15 font-medium text-primary'
+                  : 'text-foreground/60 hover:bg-white/[0.05] hover:text-foreground'
+              }`}
+            >
+              {s.title}
+            </a>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Content */}
+      <div className="min-w-0 flex-1 space-y-12 py-2 pb-24">
+        <section className="space-y-4">
+          <H id="intro">Введение</H>
+          <p className="leading-relaxed text-foreground/70">
+            REST API для покупки Telegram-аккаунтов по странам — поштучно и
+            оптом. Списание идёт с баланса, пополняемого криптовалютой. Все
+            ответы в формате JSON. Базовый URL:
+          </p>
+          <CodeBlock language="http" code={`${baseUrl}/api/v1`} />
+        </section>
+
+        <section className="space-y-4">
+          <H id="auth">Авторизация</H>
+          <p className="leading-relaxed text-foreground/70">
+            Каждый запрос должен содержать ваш API-ключ в заголовке{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              x-api-key
+            </code>
+            . Создать ключ можно в кабинете разработчика.
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`curl ${baseUrl}/api/v1/profile \\
+  -H "x-api-key: sk_live_ваш_ключ"`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="pricing">Цены и скидки</H>
+          <p className="leading-relaxed text-foreground/70">
+            Цена каждой страны рассчитывается автоматически с наценкой. Чем
+            больше вы потратили за всё время, тем выше уровень и постоянная
+            скидка от цены:
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs text-foreground/50">
+                <tr>
+                  <th className="pb-2 font-medium">Уровень</th>
+                  <th className="pb-2 font-medium">Порог трат</th>
+                  <th className="pb-2 font-medium">Скидка</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-foreground/80">
+                <tr><td className="py-2">Bronze</td><td>$50</td><td>2.5%</td></tr>
+                <tr><td className="py-2">Silver</td><td>$200</td><td>5%</td></tr>
+                <tr><td className="py-2">Gold</td><td>$500</td><td>7.5%</td></tr>
+                <tr><td className="py-2">Platinum</td><td>$2000</td><td>10%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-foreground/50">
+            Скидка применяется к финальной цене автоматически. Актуальные цены
+            всегда возвращает эндпоинт каталога.
+          </p>
+        </section>
+
+        <section className="space-y-4">
+          <H id="errors">Ошибки</H>
+          <p className="leading-relaxed text-foreground/70">
+            При ошибке возвращается соответствующий HTTP-код и тело с полями{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              error
+            </code>{' '}
+            и{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              message
+            </code>
+            .
+          </p>
+          <CodeBlock
+            language="json"
+            code={`{
+  "error": "insufficient_balance",
+  "message": "Not enough balance."
+}`}
+          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs text-foreground/50">
+                <tr>
+                  <th className="pb-2 font-medium">Код</th>
+                  <th className="pb-2 font-medium">Значение</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-foreground/80">
+                <tr><td className="py-2">401</td><td>Неверный или отсутствующий API-ключ</td></tr>
+                <tr><td className="py-2">402</td><td>Недостаточно средств на балансе</td></tr>
+                <tr><td className="py-2">404</td><td>Ресурс не найден</td></tr>
+                <tr><td className="py-2">409</td><td>Нет в наличии / некорректный статус</td></tr>
+                <tr><td className="py-2">429</td><td>Слишком много запросов</td></tr>
+                <tr><td className="py-2">502</td><td>Ошибка вышестоящего провайдера</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <H id="health">GET /health</H>
+          <p className="leading-relaxed text-foreground/70">
+            Проверка доступности сервиса и серверного времени. Не требует ключа.
+          </p>
+          <CodeBlock
+            language="json"
+            code={`{
+  "ok": true,
+  "time": "2026-07-19T12:00:00.000Z"
+}`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="catalog">GET /catalog</H>
+          <p className="leading-relaxed text-foreground/70">
+            Список доступных стран с вашими персональными ценами (с учётом
+            скидки уровня) и наличием.
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`curl ${baseUrl}/api/v1/catalog \\
+  -H "x-api-key: sk_live_ваш_ключ"`}
+          />
+          <CodeBlock
+            language="json"
+            code={`{
+  "countries": [
+    {
+      "code": "US",
+      "name": "United States",
+      "price": 1.39,
+      "available": true
+    }
+  ]
+}`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="profile">GET /profile</H>
+          <p className="leading-relaxed text-foreground/70">
+            Баланс, уровень скидки и суммарная статистика.
+          </p>
+          <CodeBlock
+            language="json"
+            code={`{
+  "balance": 42.5,
+  "tier": { "id": "silver", "name": "Silver", "discountPercent": 5 },
+  "totalSpent": 210.0
+}`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="purchase">POST /purchases</H>
+          <p className="leading-relaxed text-foreground/70">
+            Создаёт покупку одного аккаунта. Стоимость сразу списывается с
+            баланса, статус —{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              PENDING
+            </code>
+            . Далее запросите код.
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`curl -X POST ${baseUrl}/api/v1/purchases \\
+  -H "x-api-key: sk_live_ваш_ключ" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "country": "US" }'`}
+          />
+          <CodeBlock
+            language="json"
+            code={`{
+  "id": "prc_a1b2c3",
+  "country": "United States",
+  "phone": "+1201555....",
+  "price": 1.39,
+  "status": "PENDING",
+  "created_at": "2026-07-19T12:00:00.000Z"
+}`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="code">POST /purchases/:id/request-code</H>
+          <p className="leading-relaxed text-foreground/70">
+            Запрашивает код входа. Сервер держит соединение открытым и ждёт код
+            до <strong className="text-foreground">120 секунд</strong>,
+            возвращая его сразу после получения. Если код не пришёл за это
+            время, вернётся{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              code_pending
+            </code>{' '}
+            — можно повторить запрос.
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`curl -X POST ${baseUrl}/api/v1/purchases/prc_a1b2c3/request-code \\
+  -H "x-api-key: sk_live_ваш_ключ"`}
+          />
+          <CodeBlock
+            language="json"
+            code={`{
+  "id": "prc_a1b2c3",
+  "status": "SUCCESS",
+  "code": "41 * * 1",
+  "two_fa_password": "..."
+}`}
+          />
+          <p className="leading-relaxed text-foreground/70">
+            Асинхронный режим: передайте{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              callback_url
+            </code>{' '}
+            — сервер ответит сразу, а код доставит на ваш вебхук, как только он
+            появится.
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`curl -X POST ${baseUrl}/api/v1/purchases/prc_a1b2c3/request-code \\
+  -H "x-api-key: sk_live_ваш_ключ" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "callback_url": "https://ваш-сайт/webhook" }'`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="refund">POST /purchases/:id/refund</H>
+          <p className="leading-relaxed text-foreground/70">
+            Возврат средств, если код не был получен в течение{' '}
+            <strong className="text-foreground">20 минут</strong> после покупки.
+            Сумма возвращается на баланс.
+          </p>
+          <CodeBlock
+            language="json"
+            code={`{
+  "id": "prc_a1b2c3",
+  "status": "REFUNDED",
+  "refunded_at": "2026-07-19T12:05:00.000Z"
+}`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="bulk">Оптовые заказы</H>
+          <p className="leading-relaxed text-foreground/70">
+            Заказ нескольких аккаунтов одной страны. Результат — ссылка на
+            ZIP-архив. Оптовые заказы не подлежат возврату.
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`# Создать оптовый заказ
+curl -X POST ${baseUrl}/api/v1/bulk \\
+  -H "x-api-key: sk_live_ваш_ключ" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "country": "US", "quantity": 10 }'
+
+# Проверить статус
+curl ${baseUrl}/api/v1/bulk/blk_xxx -H "x-api-key: sk_live_ваш_ключ"
+
+# Скачать архив
+curl -L ${baseUrl}/api/v1/bulk/blk_xxx/download \\
+  -H "x-api-key: sk_live_ваш_ключ" -o accounts.zip`}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <H id="webhooks">Вебхуки</H>
+          <p className="leading-relaxed text-foreground/70">
+            Добавьте URL вебхука в кабинете, чтобы получать события в реальном
+            времени. Мы отправляем{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              POST
+            </code>{' '}
+            с JSON и ждём ответ{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              200
+            </code>{' '}
+            в течение 5 секунд. При ошибке — до 3 повторов.
+          </p>
+          <CodeBlock
+            language="json"
+            code={`{
+  "event": "code.received",
+  "data": {
+    "id": "prc_a1b2c3",
+    "status": "SUCCESS",
+    "code": "41 * * 1"
+  }
+}`}
+          />
+          <p className="text-sm text-foreground/50">
+            События: purchase.created, code.received, purchase.refunded,
+            bulk.created.
+          </p>
+        </section>
+      </div>
+    </div>
+  )
+}

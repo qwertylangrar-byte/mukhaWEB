@@ -14,25 +14,21 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: true,
   },
-  trustedOrigins: [
-    ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
-    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-    ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
-      : []),
-  ],
+  // In development / preview the exact host varies (localhost, sandbox URL,
+  // v0 preview), so trust any origin there. In production we pin to the known
+  // deployment URLs only.
+  trustedOrigins:
+    process.env.NODE_ENV === 'production'
+      ? [
+          ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+          ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+          ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
+            ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
+            : []),
+        ]
+      : ['*'],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
   },
-  ...(process.env.NODE_ENV === 'development'
-    ? {
-        advanced: {
-          defaultCookieAttributes: {
-            sameSite: 'none' as const,
-            secure: true,
-          },
-        },
-      }
-    : {}),
 })

@@ -7,6 +7,14 @@ import {
 } from '@/lib/admin'
 import { bridge, bridgeFetch, BridgeError } from '@/lib/bridge'
 import { getFlags, setFlags, type FeatureFlags } from '@/lib/flags'
+import {
+  adjustApiClientBalance,
+  apiClientDetail,
+  blockApiClient,
+  getMarkup,
+  listApiClients,
+  setMarkup,
+} from '@/lib/reseller/admin'
 
 export const runtime = 'nodejs'
 
@@ -93,6 +101,54 @@ const handlers: Record<string, Handler> = {
     if (typeof body.message === 'string') update.message = body.message
     const flags = await setFlags(update)
     return { flags }
+  },
+
+  /* ---- API platform clients (Neon DB, not the bot bridge) ---- */
+
+  /** List / search API developer clients. */
+  'api-clients': async (body) => {
+    const query = typeof body.query === 'string' ? body.query.trim() : ''
+    const limit = Math.min(Math.max(num(body.limit) || 50, 1), 200)
+    const clients = await listApiClients(query, limit)
+    return { clients }
+  },
+
+  /** Full detail for a single API client. */
+  'api-client': async (body) => {
+    const userId = typeof body.userId === 'string' ? body.userId : ''
+    if (!userId) throw new BridgeError(400, 'Укажите ID клиента')
+    return apiClientDetail(userId)
+  },
+
+  /** Credit / debit an API client's balance. */
+  'api-balance': async (body) => {
+    const userId = typeof body.userId === 'string' ? body.userId : ''
+    const amount = Math.round(num(body.amount) * 100) / 100
+    const op = body.op === 'debit' ? 'debit' : 'credit'
+    if (!userId) throw new BridgeError(400, 'Укажите ID клиента')
+    if (amount <= 0) throw new BridgeError(400, 'Сумма должна быть больше нуля')
+    const reason =
+      (typeof body.reason === 'string' && body.reason.trim().slice(0, 200)) ||
+      `Админ-панель: ${op === 'credit' ? 'начисление' : 'списание'}`
+    return adjustApiClientBalance(userId, op === 'debit' ? -amount : amount, reason)
+  },
+
+  /** Revoke all keys for an API client (block API access). */
+  'api-block': async (body) => {
+    const userId = typeof body.userId === 'string' ? body.userId : ''
+    if (!userId) throw new BridgeError(400, 'Укажите ID клиента')
+    return blockApiClient(userId)
+  },
+
+  /** Read the default markup percentage. */
+  'api-markup-get': async () => {
+    return { markupPercent: await getMarkup() }
+  },
+
+  /** Update the default markup percentage. */
+  'api-markup-set': async (body) => {
+    const percent = num(body.markupPercent)
+    return { markupPercent: await setMarkup(percent) }
   },
 }
 

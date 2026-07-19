@@ -13,6 +13,8 @@ import {
   ShoppingBag,
   UserRound,
   Wallet,
+  Code2,
+  Percent,
 } from 'lucide-react'
 import { formatUsd } from '@/lib/client-api'
 import { Button } from '@/components/ui/button'
@@ -67,6 +69,7 @@ function Notice({
 const TABS = [
   { id: 'user', label: 'Пользователь', icon: UserRound },
   { id: 'blocks', label: 'Блокировки', icon: ShieldAlert },
+  { id: 'api', label: 'API-клиенты', icon: Code2 },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -102,7 +105,13 @@ export function AdminPanel() {
       </div>
 
       <div className="mt-6">
-        {tab === 'user' ? <UserTab /> : <BlocksTab />}
+        {tab === 'user' ? (
+          <UserTab />
+        ) : tab === 'blocks' ? (
+          <BlocksTab />
+        ) : (
+          <ApiClientsTab />
+        )}
       </div>
     </div>
   )
@@ -243,7 +252,7 @@ function UserCard({ user, onChanged }: { user: AdminUser; onChanged: () => void 
     } catch (err) {
       setMsg({
         kind: 'error',
-        text: err instanceof Error ? err.message : 'Операция не выполнена',
+        text: err instanceof Error ? err.message : 'Операция не ��ыполнена',
       })
     } finally {
       setBusy(null)
@@ -438,7 +447,7 @@ function BlocksTab() {
       setNotice({
         kind: 'success',
         text: value
-          ? 'Функция включена — пользователи снова могут ей пользоваться.'
+          ? 'Функция включена — пользователи снова могут ей пользов��ться.'
           : 'Функция заблокирована — пользователи увидят сообщение о тех. работах.',
       })
     } catch (err) {
@@ -554,6 +563,354 @@ function BlocksTab() {
       </div>
 
       {notice ? <Notice kind={notice.kind}>{notice.text}</Notice> : null}
+    </div>
+  )
+}
+
+/* ----------------------------- api clients tab --------------------------- */
+
+interface ApiClient {
+  id: string
+  email: string
+  name: string
+  createdAt: string
+  balance: number
+  totalSpent: number
+  totalTopup: number
+  tier: string
+}
+
+interface ApiClientDetail extends ApiClient {
+  revenue: number
+  cost: number
+  profit: number
+  successCount: number
+  keys: Array<{ id: string; prefix: string; name: string; status: string }>
+  purchases: Array<{
+    id: string
+    country: string
+    price: number
+    status: string
+    mode: string
+    createdAt: string
+  }>
+  transactions: Array<{
+    id: string
+    type: string
+    amount: number
+    balanceAfter: number
+    description: string | null
+    createdAt: string
+  }>
+}
+
+function ApiClientsTab() {
+  const [query, setQuery] = useState('')
+  const [clients, setClients] = useState<ApiClient[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selected, setSelected] = useState<ApiClientDetail | null>(null)
+  const [notice, setNotice] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
+  const [markup, setMarkup] = useState<number | null>(null)
+  const [amount, setAmount] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function load() {
+    setLoading(true)
+    setNotice(null)
+    try {
+      const data = await postAdmin<{ clients: ApiClient[] }>('api-clients', { query })
+      setClients(data.clients)
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Ошибка' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadMarkup() {
+    try {
+      const d = await postAdmin<{ markupPercent: number }>('api-markup-get')
+      setMarkup(d.markupPercent)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function openClient(id: string) {
+    setNotice(null)
+    try {
+      const detail = await postAdmin<ApiClientDetail>('api-client', { userId: id })
+      setSelected(detail)
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Ошибка' })
+    }
+  }
+
+  async function adjust(op: 'credit' | 'debit') {
+    if (!selected) return
+    const value = Number(amount)
+    if (!(value > 0)) return
+    setBusy(true)
+    setNotice(null)
+    try {
+      await postAdmin('api-balance', { userId: selected.id, amount: value, op })
+      setAmount('')
+      await openClient(selected.id)
+      await load()
+      setNotice({ kind: 'success', text: 'Баланс обновлён' })
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Ошибка' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function block() {
+    if (!selected) return
+    if (!confirm('Отозвать все API-ключи этого клиента?')) return
+    setBusy(true)
+    try {
+      await postAdmin('api-block', { userId: selected.id })
+      await openClient(selected.id)
+      setNotice({ kind: 'success', text: 'Ключи отозваны' })
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Ошибка' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveMarkup() {
+    if (markup == null) return
+    setBusy(true)
+    try {
+      const d = await postAdmin<{ markupPercent: number }>('api-markup-set', {
+        markupPercent: markup,
+      })
+      setMarkup(d.markupPercent)
+      setNotice({ kind: 'success', text: 'Наценка сохранена' })
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Ошибка' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Load list + markup once on mount.
+  if (markup == null && !loading && clients.length === 0) {
+    void loadMarkup()
+    void load()
+  }
+
+  const nf = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+
+  return (
+    <div className="space-y-5">
+      {/* Markup setting */}
+      <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <Percent className="size-4 text-primary" />
+          Наценка API по умолчанию
+        </h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Процент наценки поверх себестоимости для всех API-клиентов.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={markup ?? ''}
+            onChange={(e) => setMarkup(Number(e.target.value))}
+            className="h-10 w-28 rounded-full border border-input bg-background/60 px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+            aria-label="Наценка в процентах"
+          />
+          <span className="text-sm text-muted-foreground">%</span>
+          <Button className="rounded-full" onClick={saveMarkup} disabled={busy || markup == null}>
+            Сохранить
+          </Button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && load()}
+            placeholder="Поиск по email или имени"
+            className="h-11 w-full rounded-full border border-input bg-background/60 pl-11 pr-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+            aria-label="Поиск API-клиентов"
+          />
+        </div>
+        <Button className="rounded-full" onClick={load} disabled={loading}>
+          {loading ? <Loader2 className="size-4 animate-spin" /> : 'Найти'}
+        </Button>
+      </div>
+
+      {notice ? <Notice kind={notice.kind}>{notice.text}</Notice> : null}
+
+      {/* List */}
+      <div className="overflow-hidden rounded-3xl border border-white/[0.06]">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-white/[0.03] text-xs text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-medium">Клиент</th>
+              <th className="px-4 py-3 font-medium">Уровень</th>
+              <th className="px-4 py-3 text-right font-medium">Баланс</th>
+              <th className="px-4 py-3 text-right font-medium">Потрачено</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {clients.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  {loading ? 'Загрузка…' : 'Клиентов не найдено'}
+                </td>
+              </tr>
+            ) : (
+              clients.map((c) => (
+                <tr key={c.id} className="hover:bg-white/[0.02]">
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-foreground">{c.email}</p>
+                    <p className="text-xs text-muted-foreground">{c.name}</p>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.tier}</td>
+                  <td className="px-4 py-3 text-right">{nf.format(c.balance)}</td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">
+                    {nf.format(c.totalSpent)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full bg-transparent"
+                      onClick={() => openClient(c.id)}
+                    >
+                      Открыть
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Detail modal */}
+      {selected ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/10 bg-card p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">{selected.email}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {selected.tier} · с {new Date(selected.createdAt).toLocaleDateString('ru-RU')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                className="rounded-full px-3 py-1 text-sm text-muted-foreground hover:bg-white/[0.06]"
+              >
+                Закрыть
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label="Баланс" value={nf.format(selected.balance)} />
+              <Stat label="Потрачено" value={nf.format(selected.totalSpent)} />
+              <Stat label="Выручка" value={nf.format(selected.revenue)} />
+              <Stat label="Прибыль" value={nf.format(selected.profit)} />
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/[0.06] p-4">
+              <p className="text-xs font-medium text-muted-foreground">Корректировка баланса</p>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Сумма"
+                  className="h-10 w-32 rounded-full border border-input bg-background/60 px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+                  aria-label="Сумма корректировки"
+                />
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => adjust('credit')}
+                  disabled={busy}
+                >
+                  <Plus className="size-4" /> Начислить
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full bg-transparent"
+                  onClick={() => adjust('debit')}
+                  disabled={busy}
+                >
+                  <Minus className="size-4" /> Списать
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto rounded-full border-destructive/40 bg-transparent text-destructive"
+                  onClick={block}
+                  disabled={busy}
+                >
+                  Отозвать ключи
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Последние покупки ({selected.successCount} успешных)
+              </p>
+              <div className="space-y-1">
+                {selected.purchases.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Покупок нет</p>
+                ) : (
+                  selected.purchases.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2 text-sm"
+                    >
+                      <span className="text-foreground">
+                        {p.country}
+                        {p.mode === 'bulk' ? ' (опт)' : ''}
+                      </span>
+                      <span className="text-muted-foreground">{p.status}</span>
+                      <span className="text-foreground">{nf.format(p.price)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>
   )
 }

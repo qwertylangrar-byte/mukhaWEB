@@ -12,14 +12,22 @@ export interface CodeTab {
 
 export function CodeBlock({
   tabs,
+  language,
+  code,
   className,
 }: {
-  tabs: CodeTab[]
+  /** Multi-tab form. */
+  tabs?: CodeTab[]
+  /** Single-snippet form. */
+  language?: string
+  code?: string
   className?: string
 }) {
+  const resolvedTabs: CodeTab[] =
+    tabs ?? [{ label: language ?? 'code', language: language ?? 'text', code: code ?? '' }]
   const [active, setActive] = useState(0)
   const [copied, setCopied] = useState(false)
-  const current = tabs[active]
+  const current = resolvedTabs[active]
 
   async function copy() {
     try {
@@ -40,7 +48,7 @@ export function CodeBlock({
     >
       <div className="flex items-center justify-between border-b border-white/[0.06] px-2 pr-2.5">
         <div className="flex items-center gap-1 overflow-x-auto">
-          {tabs.map((tab, i) => (
+          {resolvedTabs.map((tab, i) => (
             <button
               key={tab.label}
               type="button"
