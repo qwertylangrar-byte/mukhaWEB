@@ -39,6 +39,16 @@ const ru = {
   },
   landing: {
     badge: 'Отлежавшиеся Telegram-аккаунты',
+    heroTitle1: 'Аккаунт Telegram',
+    heroTitle2: 'за 2 минуты',
+    heroSubtitle:
+      'Выбери страну, оплати с баланса и получи данные мгновенно — Session + Tdata и коды входа прямо на сайте.',
+    buyAccount: 'Купить аккаунт',
+    stepChoose: 'Выбери страну',
+    stepGetCode: 'Получи код или Tdata + Session',
+    stepUse: 'Пользуйся',
+    catalogTitle: 'Каталог аккаунтов',
+    catalogSub: 'Выбери страну — выдача мгновенная после оплаты с баланса.',
     title: 'Магазин Telegram-аккаунтов с',
     titleAccent: 'мгновенной выдачей',
     subtitle:
@@ -154,7 +164,7 @@ const ru = {
       'Код не пришёл за 120 секунд. Убедитесь, что вы ввели номер в Telegram и появилось «код отправлен», затем нажмите «Повторить».',
     downloadArchive: 'Скачать архив с аккаунтами (TData + Session)',
     archiveLater: 'Архив ещё готовится — ссылка появится в разделе «Покупки».',
-    goToOrders: 'Перейти к ��окупкам',
+    goToOrders: 'Перейти к ����окупкам',
     buyFailed: 'Не удалось купить',
     warnRecord: 'Обязательно включите запись экрана перед входом в аккаунт.',
     warnRecordSuffix:
@@ -268,7 +278,7 @@ const ru = {
     stats: [
       { value: '70+', label: 'стран в каталоге' },
       { value: '24/7', label: 'автоматическая выдача' },
-      { value: '2', label: 'способа оплаты криптой' },
+      { value: '2', label: 'спо��оба оплаты криптой' },
       { value: '1', label: 'общий бала��с с ботом' },
     ],
     whyTitle: 'Почему выбирают нас',
@@ -339,6 +349,16 @@ const en: Dict = {
   },
   landing: {
     badge: 'Aged Telegram accounts',
+    heroTitle1: 'A Telegram account',
+    heroTitle2: 'in 2 minutes',
+    heroSubtitle:
+      'Pick a country, pay from your balance and get the data instantly — Session + Tdata and login codes right on the site.',
+    buyAccount: 'Buy an account',
+    stepChoose: 'Pick a country',
+    stepGetCode: 'Get a code or Tdata + Session',
+    stepUse: 'Start using it',
+    catalogTitle: 'Account catalog',
+    catalogSub: 'Pick a country — instant delivery after paying from balance.',
     title: 'Telegram account store with',
     titleAccent: 'instant delivery',
     subtitle:

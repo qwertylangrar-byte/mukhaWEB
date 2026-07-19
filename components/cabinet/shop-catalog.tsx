@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import useSWR, { mutate } from 'swr'
 import {
   AlertCircle,
@@ -163,11 +164,23 @@ function normalizeCountry(
   }
 }
 
-export function ShopCatalog() {
+async function fetchPublicCountries(): Promise<CountriesResponse> {
+  const res = await fetch('/api/public/countries', { cache: 'no-store' })
+  const data = (await res.json().catch(() => ({}))) as CountriesResponse & {
+    error?: string
+  }
+  if (!res.ok) {
+    throw new Error(data.error || `Ошибка запроса (${res.status})`)
+  }
+  return data
+}
+
+export function ShopCatalog({ publicMode = false }: { publicMode?: boolean }) {
   const { t, lang } = useLang()
+  const router = useRouter()
   const { data, error, isLoading } = useSWR(
-    'countries',
-    swrPost<CountriesResponse>('countries'),
+    publicMode ? 'public-countries' : 'countries',
+    publicMode ? fetchPublicCountries : swrPost<CountriesResponse>('countries'),
     { refreshInterval: 60000 },
   )
   const [query, setQuery] = useState('')
@@ -237,7 +250,14 @@ export function ShopCatalog() {
               <button
                 key={c.code}
                 type="button"
-                onClick={() => inStock && setSelected(c)}
+                onClick={() => {
+                  if (!inStock) return
+                  if (publicMode) {
+                    router.push('/login')
+                    return
+                  }
+                  setSelected(c)
+                }}
                 disabled={!inStock}
                 className="group flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/70 p-5 text-left shadow-[0_4px_24px_-12px_rgba(0,0,0,0.7)] transition-all enabled:hover:-translate-y-0.5 enabled:hover:border-primary/50 enabled:hover:bg-card enabled:hover:shadow-[0_8px_32px_-12px] enabled:hover:shadow-primary/25 disabled:opacity-50"
               >
