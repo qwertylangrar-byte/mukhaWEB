@@ -36,6 +36,9 @@ const ru = {
     about: 'О нас',
     sections: 'Разделы',
     loginTg: 'Войти через Telegram',
+    catalog: 'Каталог',
+    support: 'Поддержка',
+    login: 'Войти',
   },
   landing: {
     badge: 'Отлежавшиеся Telegram-аккаунты',
@@ -157,7 +160,7 @@ const ru = {
     codeSentSuffix: ', как Telegram показал, что код отправлен.',
     loginCode: 'Код входа:',
     waitingCode: 'Ждём код от Telegram…',
-    secondsLeft: (s: number) => `Осталось до ${s} с. Не закрывайте страницу.`,
+    secondsLeft: (s: number) => `Осталось до ${s} с. Не закрывайте ст��аницу.`,
     getCode: 'Получить код',
     codeError: 'Покупка завершилась ошибкой — код недоступен.',
     codeTimeout:
@@ -267,7 +270,7 @@ const ru = {
     linkUnavailable: 'Ссылка недоступна',
     linkLabel: 'Реферальная ссылка',
     shareNote:
-      'Отправьте ссылку другу. Когда он зарегистрируется в боте и пополнит баланс, вы автоматически получите бонус на свой счёт.',
+      'Отправьте ссылку другу. Когда он зарегистрирует��я в боте и пополнит баланс, вы автоматически получите бонус на свой счёт.',
   },
   about: {
     badge: 'О сервисе',
@@ -346,6 +349,9 @@ const en: Dict = {
     about: 'About',
     sections: 'Sections',
     loginTg: 'Sign in with Telegram',
+    catalog: 'Catalog',
+    support: 'Support',
+    login: 'Sign in',
   },
   landing: {
     badge: 'Aged Telegram accounts',

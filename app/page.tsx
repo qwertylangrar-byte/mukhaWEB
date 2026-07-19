@@ -33,63 +33,53 @@ export default function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] [background-size:44px_44px]"
         />
-        <div className="relative mx-auto max-w-6xl px-4 pt-20 pb-8 md:px-6 md:pt-28">
+
+        {/* Floating 3D decor */}
+        <Image
+          src="/decor-plane.png"
+          alt=""
+          aria-hidden="true"
+          width={220}
+          height={220}
+          className="pointer-events-none absolute right-4 top-24 w-28 rotate-6 opacity-90 mix-blend-screen drop-shadow-[0_20px_40px_rgba(56,132,255,0.35)] md:right-24 md:top-28 md:w-40"
+        />
+        <Image
+          src="/decor-cube.png"
+          alt=""
+          aria-hidden="true"
+          width={220}
+          height={220}
+          className="pointer-events-none absolute left-2 top-36 hidden w-24 -rotate-12 opacity-80 mix-blend-screen md:block md:w-32"
+        />
+
+        <div className="relative mx-auto max-w-6xl px-4 pt-36 pb-8 md:px-6 md:pt-44">
           <div className="flex flex-col items-center text-center">
-            <span className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-sm text-muted-foreground backdrop-blur-sm">
-              <span className="size-2 rounded-full bg-primary shadow-[0_0_12px_2px] shadow-primary/60" />
-              {t.landing.badge}
-            </span>
             <h1 className="max-w-4xl text-balance text-5xl font-extralight leading-[1.05] tracking-tight md:text-7xl">
               {t.landing.heroTitle1}
               <br />
-              <span className="bg-gradient-to-b from-foreground to-foreground/55 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-b from-foreground to-foreground/50 bg-clip-text text-transparent">
                 {t.landing.heroTitle2}
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-pretty text-base font-light leading-relaxed text-muted-foreground md:text-lg">
               {t.landing.heroSubtitle}
             </p>
-            <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
-              <Button
-                size="lg"
-                nativeButton={false}
-                className="h-11 rounded-full px-6 text-sm shadow-[0_0_30px_-6px] shadow-primary/60"
-                render={
-                  <Link href="/login">
-                    <Send className="size-4" />
-                    {t.nav.loginTg}
-                  </Link>
-                }
-              />
-              <Button
-                size="lg"
-                variant="outline"
-                nativeButton={false}
-                className="h-11 rounded-full border-white/12 bg-white/[0.03] px-6 text-sm backdrop-blur-sm"
-                render={
-                  <Link href="/shop">
-                    {t.landing.browseCatalog}
-                    <ArrowRight className="size-4" />
-                  </Link>
-                }
-              />
-            </div>
           </div>
 
           {/* Step cards */}
-          <div className="mt-16 grid gap-x-5 gap-y-9 sm:grid-cols-3">
+          <div className="mt-16 grid gap-x-5 gap-y-10 sm:grid-cols-3">
             <StepCard index={1} image="/sky-1.png" label={t.landing.stepChoose}>
-              <span className="rounded-2xl bg-white px-5 py-3 text-sm font-medium text-neutral-900 shadow-lg">
+              <span className="rounded-2xl bg-white px-6 py-3.5 text-sm font-semibold text-neutral-900 shadow-[0_10px_30px_-6px_rgba(0,0,0,0.5)]">
                 {t.landing.buyAccount}
               </span>
             </StepCard>
 
             <StepCard index={2} image="/sky-2.png" label={t.landing.stepGetCode}>
-              <div className="flex gap-2">
+              <div className="flex gap-2.5">
                 {['4', '*', '*', '1'].map((ch, i) => (
                   <span
                     key={i}
-                    className="flex size-11 items-center justify-center rounded-xl bg-white text-xl font-semibold text-neutral-900 shadow-lg"
+                    className="flex size-12 items-center justify-center rounded-2xl bg-white text-2xl font-bold text-neutral-900 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)]"
                   >
                     {ch}
                   </span>
@@ -98,15 +88,41 @@ export default function HomePage() {
             </StepCard>
 
             <StepCard index={3} image="/sky-3.png" label={t.landing.stepUse}>
-              <span className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-white px-5 py-4 shadow-lg">
+              <span className="inline-flex items-center gap-2 rounded-3xl rounded-bl-md bg-white px-6 py-5 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)]">
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="size-2 rounded-full bg-neutral-400"
+                    className="size-2.5 rounded-full bg-neutral-400"
                   />
                 ))}
               </span>
             </StepCard>
+          </div>
+
+          <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              nativeButton={false}
+              className="h-11 rounded-full px-6 text-sm shadow-[0_0_30px_-6px] shadow-primary/60"
+              render={
+                <Link href="/login">
+                  <Send className="size-4" />
+                  {t.nav.loginTg}
+                </Link>
+              }
+            />
+            <Button
+              size="lg"
+              variant="outline"
+              nativeButton={false}
+              className="h-11 rounded-full border-white/12 bg-white/[0.03] px-6 text-sm backdrop-blur-sm"
+              render={
+                <Link href="/shop">
+                  {t.landing.browseCatalog}
+                  <ArrowRight className="size-4" />
+                </Link>
+              }
+            />
           </div>
         </div>
       </section>
@@ -216,25 +232,25 @@ function StepCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="relative">
+    <div className="group relative">
       <span className="absolute -top-3 left-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 text-sm font-medium text-white shadow-lg">
         {index}
       </span>
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-3xl border border-white/10 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.8)]">
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
         <Image
           src={image || '/placeholder.svg'}
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, 33vw"
-          className="object-cover"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent"
+          className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
         />
         <div className="relative">{children}</div>
       </div>
-      <p className="mt-3 pl-1 text-sm font-light text-muted-foreground">
+      <p className="mt-4 pl-1 text-base font-light text-foreground/90">
         {label}
       </p>
     </div>

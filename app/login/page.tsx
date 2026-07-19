@@ -14,7 +14,7 @@ export default async function LoginPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="flex flex-1 items-center justify-center px-4 py-16">
+      <main className="flex flex-1 items-center justify-center px-4 pt-28 pb-16">
         <LoginCard />
       </main>
     </div>

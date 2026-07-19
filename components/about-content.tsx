@@ -41,7 +41,7 @@ export function AboutContent() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_oklch,var(--primary)_26%,transparent),transparent_70%)]"
         />
-        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 py-20 text-center md:py-28">
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pt-32 pb-20 text-center md:pt-40 md:pb-28">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-sm text-muted-foreground">
             <span className="size-2 rounded-full bg-primary" />
             {t.about.badge}
