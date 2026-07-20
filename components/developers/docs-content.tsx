@@ -242,17 +242,24 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
             code={`curl -X POST ${baseUrl}/api/v1/purchases \\
   -H "x-api-key: sk_live_ваш_ключ" \\
   -H "Content-Type: application/json" \\
-  -d '{ "country": "US" }'`}
+  -d '{ "country_code": "US" }'`}
           />
           <CodeBlock
             language="json"
             code={`{
-  "id": "prc_a1b2c3",
-  "country": "United States",
-  "phone": "+1201555....",
-  "price": 1.39,
-  "status": "PENDING",
-  "created_at": "2026-07-19T12:00:00.000Z"
+  "purchase": {
+    "id": "pur_a1b2c3",
+    "mode": "single",
+    "country": "United States",
+    "country_code": "US",
+    "phone": "+1201555....",
+    "price": 1.39,
+    "quantity": 1,
+    "status": "PENDING",
+    "code": null,
+    "password": null,
+    "created_at": "2026-07-19T12:00:00.000Z"
+  }
 }`}
           />
         </section>

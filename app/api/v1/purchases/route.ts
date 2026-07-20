@@ -6,7 +6,8 @@ import {
 import { apiError, apiOk, requireClient } from '@/lib/reseller/http'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+// Reserving an account upstream can take longer than a catalog read.
+export const maxDuration = 120
 
 export async function POST(req: Request) {
   const auth = await requireClient(req)
