@@ -62,11 +62,10 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
             <a
               key={s.id}
               href={`#${s.id}`}
-              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                active === s.id
+              className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${active === s.id
                   ? 'bg-primary/15 font-medium text-primary'
                   : 'text-foreground/60 hover:bg-white/[0.05] hover:text-foreground'
-              }`}
+                }`}
             >
               {s.title}
             </a>
@@ -161,6 +160,7 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-foreground/80">
+                <tr><td className="py-2">202</td><td>Не ошибка: код ещё готовится, повторите через retry_after сек</td></tr>
                 <tr><td className="py-2">401</td><td>Неверный или отсутствующий API-ключ</td></tr>
                 <tr><td className="py-2">402</td><td>Недостаточно средств на балансе</td></tr>
                 <tr><td className="py-2">404</td><td>Ресурс не найден</td></tr>
@@ -267,20 +267,96 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
         <section className="space-y-4">
           <H id="code">POST /purchases/:id/request-code</H>
           <p className="leading-relaxed text-foreground/70">
-            Запрашивает код входа. Сервер держит соединение открытым и ждёт код
-            до <strong className="text-foreground">120 секунд</strong>,
-            возвращая его сразу после получения. Если код не пришёл за это
-            время, вернётся{' '}
+            Запрашивает код входа для аккаунта. Эндпоинт{' '}
+            <strong className="text-foreground">асинхронный</strong>: код
+            приходит от провайдера в течение{' '}
+            <strong className="text-foreground">5–30 секунд</strong>, поэтому с
+            первого раза он почти никогда не готов. В этом случае возвращается{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              HTTP 202
+            </code>{' '}
+            со статусом{' '}
             <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
               code_pending
-            </code>{' '}
-            — можно повторить запрос.
+            </code>
+            . Это <strong className="text-foreground">не ошибка</strong> —
+            повторяйте запрос, пока не получите код.
           </p>
+
+          <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+            <p className="text-sm leading-relaxed text-amber-200/90">
+              <strong>Важно:</strong> статус{' '}
+              <code className="rounded bg-white/10 px-1.5 py-0.5">202</code> =
+              «код ещё в пути». Дождитесь{' '}
+              <code className="rounded bg-white/10 px-1.5 py-0.5">
+                retry_after
+              </code>{' '}
+              секунд и повторите тот же запрос (polling). Запросы идемпотентны —
+              новый код не создаётся.
+            </p>
+          </div>
+
+          <h3 className="pt-2 text-sm font-semibold text-foreground/90">
+            Статусы ответа
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs text-foreground/50">
+                <tr>
+                  <th className="pb-2 font-medium">HTTP</th>
+                  <th className="pb-2 font-medium">Статус</th>
+                  <th className="pb-2 font-medium">Что делать</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-foreground/80">
+                <tr>
+                  <td className="py-2">200</td>
+                  <td>SUCCESS</td>
+                  <td>Код получен — забрать из ответа</td>
+                </tr>
+                <tr>
+                  <td className="py-2">202</td>
+                  <td>code_pending</td>
+                  <td>Подождать retry_after сек и повторить</td>
+                </tr>
+                <tr>
+                  <td className="py-2">409</td>
+                  <td>—</td>
+                  <td>Код уже выдан — забрать через GET /purchases/:id</td>
+                </tr>
+                <tr>
+                  <td className="py-2">402</td>
+                  <td>insufficient_balance</td>
+                  <td>Пополнить баланс</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="pt-2 text-sm font-semibold text-foreground/90">
+            Запрос
+          </h3>
           <CodeBlock
             language="bash"
             code={`curl -X POST ${baseUrl}/api/v1/purchases/prc_a1b2c3/request-code \\
   -H "x-api-key: sk_live_ваш_ключ"`}
           />
+
+          <h3 className="pt-2 text-sm font-semibold text-foreground/90">
+            Ответ 202 — код ещё не пришёл (повторите запрос)
+          </h3>
+          <CodeBlock
+            language="json"
+            code={`{
+  "status": "code_pending",
+  "message": "Code has not arrived yet. Please retry.",
+  "retry_after": 5
+}`}
+          />
+
+          <h3 className="pt-2 text-sm font-semibold text-foreground/90">
+            Ответ 200 — код получен
+          </h3>
           <CodeBlock
             language="json"
             code={`{
@@ -290,13 +366,112 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
   "two_fa_password": "..."
 }`}
           />
+
+          <h3 className="pt-2 text-sm font-semibold text-foreground/90">
+            Правильный вызов (polling)
+          </h3>
           <p className="leading-relaxed text-foreground/70">
-            Асинхронный режим: передайте{' '}
+            Повторяйте запрос, пока не получите{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              200
+            </code>
+            , уважая{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              retry_after
+            </code>
+            :
+          </p>
+          <CodeBlock
+            tabs={[
+              {
+                label: 'JavaScript',
+                language: 'javascript',
+                code: `async function getCode(purchaseId, apiKey) {
+  const base = "${baseUrl}/api/v1"
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const res = await fetch(
+      \`\${base}/purchases/\${purchaseId}/request-code\`,
+      { method: "POST", headers: { "x-api-key": apiKey } },
+    )
+
+    // Код готов
+    if (res.status === 200) {
+      return await res.json() // { code, two_fa_password, ... }
+    }
+
+    // Код ещё не пришёл — ждём retry_after и повторяем
+    if (res.status === 202) {
+      const { retry_after } = await res.json()
+      await new Promise((r) => setTimeout(r, (retry_after ?? 5) * 1000))
+      continue
+    }
+
+    // Код уже выдавался ранее — забираем через GET
+    if (res.status === 409) {
+      const r = await fetch(\`\${base}/purchases/\${purchaseId}\`, {
+        headers: { "x-api-key": apiKey },
+      })
+      return await r.json()
+    }
+
+    throw new Error(\`Unexpected status: \${res.status}\`)
+  }
+
+  throw new Error("Код не пришёл за отведённое время")
+}`,
+              },
+              {
+                label: 'Python',
+                language: 'python',
+                code: `import time, requests
+
+def get_code(purchase_id, api_key):
+    base = "${baseUrl}/api/v1"
+    headers = {"x-api-key": api_key}
+
+    for _ in range(20):
+        res = requests.post(
+            f"{base}/purchases/{purchase_id}/request-code",
+            headers=headers,
+        )
+
+        # Код готов
+        if res.status_code == 200:
+            return res.json()
+
+        # Код ещё не пришёл — ждём retry_after и повторяем
+        if res.status_code == 202:
+            time.sleep(res.json().get("retry_after", 5))
+            continue
+
+        # Код уже выдавался ранее — забираем через GET
+        if res.status_code == 409:
+            return requests.get(
+                f"{base}/purchases/{purchase_id}", headers=headers
+            ).json()
+
+        raise Exception(f"Unexpected status: {res.status_code}")
+
+    raise Exception("Код не пришёл за отведённое время")`,
+              },
+            ]}
+          />
+
+          <h3 className="pt-2 text-sm font-semibold text-foreground/90">
+            Альтернатива — вебхук (без polling)
+          </h3>
+          <p className="leading-relaxed text-foreground/70">
+            Передайте{' '}
             <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
               callback_url
             </code>{' '}
             — сервер ответит сразу, а код доставит на ваш вебхук, как только он
-            появится.
+            появится. Ваш эндпоинт должен вернуть{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-primary">
+              200
+            </code>{' '}
+            в течение 5 секунд.
           </p>
           <CodeBlock
             language="bash"
