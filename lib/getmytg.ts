@@ -183,7 +183,9 @@ export const gmt = {
         body: { country_code: countryCode.toUpperCase() },
       },
       // Reserving an account from the provider is slower than a catalog read.
-      90000,
+      // Kept just under the route's 120s maxDuration so we return a clean
+      // timeout error rather than letting the platform kill the function.
+      110000,
     ),
 
   purchase: (purchaseId: number | string) =>
@@ -219,7 +221,7 @@ export const gmt = {
         method: 'POST',
         body: { country_code: countryCode.toUpperCase(), quantity },
       },
-      90000,
+      110000,
     ),
 
   bulkStatus: (bulkPurchaseId: number | string) =>
