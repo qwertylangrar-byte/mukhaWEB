@@ -5,7 +5,7 @@ import { Logo } from '@/components/logo'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useLang } from '@/lib/i18n'
 
-const SUPPORT_URL = 'https://t.me/MukhaSupport'
+const SUPPORT_URL = 'https://t.me/MukhaSupp'
 
 export function SiteHeader() {
   const { t } = useLang()
