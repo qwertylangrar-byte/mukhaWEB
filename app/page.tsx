@@ -67,7 +67,7 @@ export default function HomePage() {
           </div>
 
           {/* Step cards */}
-          <div className="mx-auto mt-16 grid max-w-3xl gap-x-5 gap-y-10 sm:grid-cols-3">
+          <div className="mx-auto mt-16 grid max-w-4xl gap-x-6 gap-y-10 sm:grid-cols-3">
             <StepCard
               index={1}
               image="/step-buy.png"
@@ -217,9 +217,6 @@ function StepCard({
 }) {
   return (
     <div className="group relative">
-      <span className="absolute -top-3 left-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 text-sm font-medium text-white shadow-lg">
-        {index}
-      </span>
       <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
         <Image
           src={image || '/placeholder.svg'}
@@ -229,9 +226,12 @@ function StepCard({
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
-      <p className="mt-4 pl-1 text-base font-light text-foreground/90">
-        {label}
-      </p>
+      <div className="mt-4 flex items-center gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-sm font-semibold text-primary shadow-[0_0_14px_-2px] shadow-primary/50">
+          {index}
+        </span>
+        <p className="text-base font-light text-foreground/90">{label}</p>
+      </div>
     </div>
   )
 }
