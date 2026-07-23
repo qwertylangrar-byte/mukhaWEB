@@ -48,7 +48,7 @@ export function Logo({ href = '/' }: { href?: string }) {
   return (
     <Link href={href} className="group flex items-center gap-2.5">
       <LogoMark className="transition-transform group-hover:scale-105" />
-      <span className="text-lg font-bold tracking-tight">
+      <span className="font-serif text-base font-light tracking-tight">
         Mukha
         <span className="bg-gradient-to-r from-[oklch(0.72_0.16_240)] to-[oklch(0.62_0.18_255)] bg-clip-text text-transparent">
           TG
