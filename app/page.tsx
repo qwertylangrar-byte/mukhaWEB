@@ -67,7 +67,7 @@ export default function HomePage() {
           </div>
 
           {/* Step cards */}
-          <div className="mt-16 grid gap-x-5 gap-y-10 sm:grid-cols-3">
+          <div className="mx-auto mt-16 grid max-w-3xl gap-x-5 gap-y-10 sm:grid-cols-3">
             <StepCard
               index={1}
               image="/step-buy.png"
