@@ -39,6 +39,7 @@ export function CabinetHeader({
     { href: '/topup', label: t.nav.topup },
     { href: '/referral', label: t.nav.referral },
     { href: '/about', label: t.nav.about },
+    { href: '/developers', label: t.nav.api },
   ]
 
   async function logout() {
