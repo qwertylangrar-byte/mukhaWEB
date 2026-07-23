@@ -38,6 +38,7 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-success: var(--success);
+  --font-serif: 'Unbounded', 'Unbounded Fallback', sans-serif;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,43 +50,43 @@
 
 :root {
   color-scheme: dark;
-  /* Deeper, darker navy background */
-  --background: oklch(0.13 0.042 265);
-  --foreground: oklch(0.96 0.01 250);
-  /* Slightly lighter navy cards */
-  --card: oklch(0.17 0.048 264);
-  --card-foreground: oklch(0.96 0.01 250);
-  --popover: oklch(0.17 0.048 264);
-  --popover-foreground: oklch(0.96 0.01 250);
-  /* Telegram blue */
-  --primary: oklch(0.66 0.16 248);
-  --primary-foreground: oklch(0.98 0.01 250);
-  --secondary: oklch(0.23 0.05 263);
-  --secondary-foreground: oklch(0.93 0.01 250);
-  --muted: oklch(0.21 0.045 263);
-  --muted-foreground: oklch(0.66 0.03 255);
-  --accent: oklch(0.25 0.06 259);
-  --accent-foreground: oklch(0.95 0.01 250);
-  --destructive: oklch(0.6 0.2 25);
+  /* Near-black base for the halftone LED backdrop */
+  --background: oklch(0.07 0.012 262);
+  --foreground: oklch(0.97 0.005 250);
+  /* Near-neutral dark cards that sit on the black halftone backdrop */
+  --card: oklch(0.15 0.015 262);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.15 0.015 262);
+  --popover-foreground: oklch(0.97 0.005 250);
+  /* Telegram blue, brightened for legibility on near-black */
+  --primary: oklch(0.74 0.13 240);
+  --primary-foreground: oklch(0.13 0.02 250);
+  --secondary: oklch(0.22 0.02 262);
+  --secondary-foreground: oklch(0.94 0.005 250);
+  --muted: oklch(0.2 0.018 262);
+  --muted-foreground: oklch(0.78 0.012 252);
+  --accent: oklch(0.24 0.025 258);
+  --accent-foreground: oklch(0.96 0.005 250);
+  --destructive: oklch(0.62 0.2 25);
   --destructive-foreground: oklch(0.98 0.01 250);
-  --success: oklch(0.72 0.17 155);
-  --border: oklch(0.68 0.1 255 / 14%);
-  --input: oklch(0.68 0.1 255 / 20%);
-  --ring: oklch(0.66 0.16 248);
+  --success: oklch(0.74 0.17 155);
+  --border: oklch(0.85 0.02 255 / 16%);
+  --input: oklch(0.85 0.02 255 / 22%);
+  --ring: oklch(0.74 0.13 240);
   --chart-1: oklch(0.65 0.17 252);
   --chart-2: oklch(0.72 0.12 210);
   --chart-3: oklch(0.55 0.14 265);
   --chart-4: oklch(0.72 0.17 155);
   --chart-5: oklch(0.68 0.03 255);
   --radius: 0.75rem;
-  --sidebar: oklch(0.18 0.048 262);
-  --sidebar-foreground: oklch(0.96 0.01 250);
-  --sidebar-primary: oklch(0.65 0.17 252);
-  --sidebar-primary-foreground: oklch(0.98 0.01 250);
-  --sidebar-accent: oklch(0.26 0.05 262);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(0.65 0.1 255 / 14%);
-  --sidebar-ring: oklch(0.65 0.17 252);
+  --sidebar: oklch(0.16 0.015 262);
+  --sidebar-foreground: oklch(0.97 0.005 250);
+  --sidebar-primary: oklch(0.74 0.13 240);
+  --sidebar-primary-foreground: oklch(0.13 0.02 250);
+  --sidebar-accent: oklch(0.24 0.025 262);
+  --sidebar-accent-foreground: oklch(0.96 0.005 250);
+  --sidebar-border: oklch(0.85 0.02 255 / 16%);
+  --sidebar-ring: oklch(0.74 0.13 240);
 }
 
 @layer base {
@@ -99,50 +100,74 @@
     @apply text-foreground;
     position: relative;
   }
-  /* Shimmering charcoal-to-navy backdrop that slowly drifts across the page */
+  /* Soft static glow bleeding behind the dots, like backlit LEDs */
   body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(
+        ellipse 55% 30% at 82% 4%,
+        oklch(0.9 0.03 85 / 14%),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 45% 26% at 2% 34%,
+        oklch(0.94 0.02 90 / 16%),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 48% 30% at 94% 58%,
+        oklch(0.78 0.1 220 / 12%),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 55% 30% at 26% 100%,
+        oklch(0.9 0.03 80 / 14%),
+        transparent 70%
+      );
+  }
+  /* Halftone LED dots: light blooms revealed through a fine dot grid */
+  body::after {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -1;
     background:
       radial-gradient(
-        ellipse 90% 55% at 50% -12%,
-        oklch(0.46 0.15 255 / 38%),
-        transparent 62%
+        ellipse 55% 30% at 82% 4%,
+        oklch(0.9 0.03 85 / 80%),
+        transparent 70%
       ),
-      linear-gradient(
-        130deg,
-        oklch(0.09 0.015 258) 0%,
-        oklch(0.13 0.05 264) 24%,
-        oklch(0.08 0.015 250) 48%,
-        oklch(0.15 0.062 262) 72%,
-        oklch(0.1 0.03 256) 100%
+      radial-gradient(
+        ellipse 45% 26% at 2% 34%,
+        oklch(0.94 0.02 90 / 85%),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 48% 30% at 94% 58%,
+        oklch(0.78 0.1 220 / 55%),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 55% 30% at 26% 100%,
+        oklch(0.9 0.03 80 / 75%),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 40% 22% at 62% 26%,
+        oklch(0.6 0.12 245 / 35%),
+        transparent 70%
       );
-    background-size:
-      100% 100%,
-      300% 300%;
-    animation: aurora 24s ease-in-out infinite;
-  }
-}
-
-@keyframes aurora {
-  0%,
-  100% {
-    background-position:
-      50% 0%,
-      0% 50%;
-  }
-  50% {
-    background-position:
-      50% 0%,
-      100% 50%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body::before {
-    animation: none;
+    -webkit-mask-image: radial-gradient(
+      circle at center,
+      #000 1px,
+      transparent 1.5px
+    );
+    mask-image: radial-gradient(circle at center, #000 1px, transparent 1.5px);
+    -webkit-mask-size: 7px 7px;
+    mask-size: 7px 7px;
   }
 }
 

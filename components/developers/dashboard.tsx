@@ -120,7 +120,7 @@ export function DevDashboard({ data }: { data: Overview }) {
         <p className="text-3xl font-semibold text-foreground">
           {nf.format(data.balance)}
         </p>
-        <div className="mt-3 flex gap-4 text-xs text-foreground/60">
+        <div className="mt-3 flex gap-4 text-xs text-foreground/80">
           <span>Пополнено: {nf.format(data.totalTopup)}</span>
           <span>Потрачено: {nf.format(data.totalSpent)}</span>
         </div>
@@ -162,13 +162,13 @@ export function DevDashboard({ data }: { data: Overview }) {
                 style={{ width: `${spentPct}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-foreground/60">
+            <p className="mt-2 text-xs text-foreground/80">
               Ещё {nf.format(data.nextTier.spendNeeded)} до уровня «
               {data.nextTier.name}»
             </p>
           </>
         ) : (
-          <p className="mt-4 text-xs text-foreground/60">
+          <p className="mt-4 text-xs text-foreground/80">
             Максимальный уровень достигнут.
           </p>
         )}
@@ -228,7 +228,7 @@ export function DevDashboard({ data }: { data: Overview }) {
             </div>
           )}
           {data.keys.length === 0 ? (
-            <p className="text-sm text-foreground/50">Ключей пока нет.</p>
+            <p className="text-sm text-foreground/70">Ключей пока нет.</p>
           ) : (
             <ul className="divide-y divide-white/5">
               {data.keys.map((k) => (
@@ -236,11 +236,11 @@ export function DevDashboard({ data }: { data: Overview }) {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
                       {k.name}{' '}
-                      <span className="font-mono text-xs text-foreground/50">
+                      <span className="font-mono text-xs text-foreground/70">
                         {k.prefix}…
                       </span>
                     </p>
-                    <p className="text-xs text-foreground/50">
+                    <p className="text-xs text-foreground/70">
                       {k.status === 'active' ? 'Активен' : 'Отозван'} ·{' '}
                       {new Date(k.createdAt).toLocaleDateString('ru-RU')}
                     </p>
@@ -331,12 +331,12 @@ export function DevDashboard({ data }: { data: Overview }) {
       <div className="lg:col-span-3">
         <Panel title="История операций" icon={<Wallet size={16} />}>
           {data.transactions.length === 0 ? (
-            <p className="text-sm text-foreground/50">Операций пока нет.</p>
+            <p className="text-sm text-foreground/70">Операций пока нет.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="text-xs text-foreground/50">
+                  <tr className="text-xs text-foreground/70">
                     <th className="pb-2 font-medium">Дата</th>
                     <th className="pb-2 font-medium">Тип</th>
                     <th className="pb-2 font-medium">Описание</th>
@@ -347,11 +347,11 @@ export function DevDashboard({ data }: { data: Overview }) {
                 <tbody className="divide-y divide-white/5">
                   {data.transactions.map((t) => (
                     <tr key={t.id} className="text-foreground/80">
-                      <td className="py-2 text-xs text-foreground/50">
+                      <td className="py-2 text-xs text-foreground/70">
                         {new Date(t.createdAt).toLocaleString('ru-RU')}
                       </td>
                       <td className="py-2">{t.type}</td>
-                      <td className="py-2 text-foreground/60">{t.description}</td>
+                      <td className="py-2 text-foreground/80">{t.description}</td>
                       <td
                         className={`py-2 text-right font-medium ${
                           t.amount >= 0 ? 'text-emerald-400' : 'text-foreground'
@@ -360,7 +360,7 @@ export function DevDashboard({ data }: { data: Overview }) {
                         {t.amount >= 0 ? '+' : ''}
                         {nf.format(t.amount)}
                       </td>
-                      <td className="py-2 text-right text-foreground/60">
+                      <td className="py-2 text-right text-foreground/80">
                         {nf.format(t.balanceAfter)}
                       </td>
                     </tr>

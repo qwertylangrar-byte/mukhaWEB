@@ -36,12 +36,12 @@ export default function HomePage() {
 
         {/* Floating 3D decor */}
         <Image
-          src="/decor-plane.png"
+          src="/decor-keycap.png"
           alt=""
           aria-hidden="true"
-          width={220}
-          height={220}
-          className="pointer-events-none absolute right-4 top-24 w-28 rotate-6 opacity-90 mix-blend-screen drop-shadow-[0_20px_40px_rgba(56,132,255,0.35)] md:right-24 md:top-28 md:w-40"
+          width={280}
+          height={280}
+          className="pointer-events-none absolute right-2 top-20 w-32 rotate-6 opacity-95 mix-blend-screen [mask-image:radial-gradient(closest-side,#000_55%,transparent_78%)] md:right-16 md:top-24 md:w-48"
         />
         <Image
           src="/decor-cube.png"
@@ -54,7 +54,7 @@ export default function HomePage() {
 
         <div className="relative mx-auto max-w-6xl px-4 pt-36 pb-8 md:px-6 md:pt-44">
           <div className="flex flex-col items-center text-center">
-            <h1 className="max-w-4xl text-balance text-5xl font-extralight leading-[1.05] tracking-tight md:text-7xl">
+            <h1 className="max-w-4xl text-balance font-serif text-4xl font-extralight leading-[1.15] tracking-tight md:text-6xl">
               {t.landing.heroTitle1}
               <br />
               <span className="bg-gradient-to-b from-foreground to-foreground/50 bg-clip-text text-transparent">
@@ -67,36 +67,22 @@ export default function HomePage() {
           </div>
 
           {/* Step cards */}
-          <div className="mt-16 grid gap-x-5 gap-y-10 sm:grid-cols-3">
-            <StepCard index={1} image="/sky-1.png" label={t.landing.stepChoose}>
-              <span className="rounded-2xl bg-white px-6 py-3.5 text-sm font-semibold text-neutral-900 shadow-[0_10px_30px_-6px_rgba(0,0,0,0.5)]">
-                {t.landing.buyAccount}
-              </span>
-            </StepCard>
-
-            <StepCard index={2} image="/sky-2.png" label={t.landing.stepGetCode}>
-              <div className="flex gap-2.5">
-                {['4', '*', '*', '1'].map((ch, i) => (
-                  <span
-                    key={i}
-                    className="flex size-12 items-center justify-center rounded-2xl bg-white text-2xl font-bold text-neutral-900 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)]"
-                  >
-                    {ch}
-                  </span>
-                ))}
-              </div>
-            </StepCard>
-
-            <StepCard index={3} image="/sky-3.png" label={t.landing.stepUse}>
-              <span className="inline-flex items-center gap-2 rounded-3xl rounded-bl-md bg-white px-6 py-5 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)]">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="size-2.5 rounded-full bg-neutral-400"
-                  />
-                ))}
-              </span>
-            </StepCard>
+          <div className="mx-auto mt-16 grid max-w-4xl gap-x-6 gap-y-10 sm:grid-cols-3">
+            <StepCard
+              index={1}
+              image="/step-buy.png"
+              label={t.landing.stepChoose}
+            />
+            <StepCard
+              index={2}
+              image="/step-code.png"
+              label={t.landing.stepGetCode}
+            />
+            <StepCard
+              index={3}
+              image="/step-use.png"
+              label={t.landing.stepUse}
+            />
           </div>
 
           <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -224,19 +210,17 @@ function StepCard({
   index,
   image,
   label,
-  children,
 }: {
   index: number
   image: string
   label: string
-  children: React.ReactNode
 }) {
   return (
     <div className="group relative">
       <span className="absolute -top-3 left-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 text-sm font-medium text-white shadow-lg">
         {index}
       </span>
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
         <Image
           src={image || '/placeholder.svg'}
           alt=""
@@ -244,11 +228,6 @@ function StepCard({
           sizes="(max-width: 640px) 100vw, 33vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
-        />
-        <div className="relative">{children}</div>
       </div>
       <p className="mt-4 pl-1 text-base font-light text-foreground/90">
         {label}

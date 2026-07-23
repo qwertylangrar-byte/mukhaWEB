@@ -152,7 +152,7 @@ export default async function DevelopersPage() {
               по одному API-запросу
             </span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-pretty text-base font-light leading-relaxed text-foreground/60 md:text-lg">
+          <p className="mx-auto mt-6 max-w-2xl text-pretty text-base font-light leading-relaxed text-foreground/80 md:text-lg">
             Интегрируйте покупку аккаунтов в свой продукт: каталог по странам,
             мгновенная выдача кодов, опт, вебхуки и криптопополнение баланса.
           </p>
@@ -189,7 +189,7 @@ export default async function DevelopersPage() {
                 <f.icon className="size-5 text-primary" />
               </span>
               <h3 className="mt-4 text-base font-medium">{f.title}</h3>
-              <p className="mt-1.5 text-sm font-light leading-relaxed text-foreground/55">
+              <p className="mt-1.5 text-sm font-light leading-relaxed text-foreground/75">
                 {f.text}
               </p>
             </div>
@@ -203,7 +203,7 @@ export default async function DevelopersPage() {
           <h2 className="text-3xl font-extralight tracking-tight md:text-4xl">
             Три запроса до первого аккаунта
           </h2>
-          <p className="mt-3 text-pretty font-light text-foreground/55">
+          <p className="mt-3 text-pretty font-light text-foreground/75">
             Получите ключ в кабинете, пополните баланс криптовалютой и покупайте.
           </p>
         </div>
@@ -223,7 +223,7 @@ export default async function DevelopersPage() {
           <h2 className="text-3xl font-extralight tracking-tight md:text-4xl">
             Уровни и скидки
           </h2>
-          <p className="mt-3 font-light text-foreground/55">
+          <p className="mt-3 font-light text-foreground/75">
             Скидка растёт вместе с вашим оборотом и применяется автоматически.
           </p>
         </div>
@@ -239,8 +239,8 @@ export default async function DevelopersPage() {
               <span className="mt-3 text-3xl font-light text-primary">
                 {tier.discountPercent}%
               </span>
-              <span className="mt-1 text-xs text-foreground/45">скидка</span>
-              <span className="mt-4 flex items-center justify-center gap-1 text-xs text-foreground/50">
+              <span className="mt-1 text-xs text-foreground/65">скидка</span>
+              <span className="mt-4 flex items-center justify-center gap-1 text-xs text-foreground/70">
                 <Clock className="size-3" />
                 от ${tier.threshold}
               </span>
@@ -255,7 +255,7 @@ export default async function DevelopersPage() {
           <h2 className="text-3xl font-extralight tracking-tight md:text-4xl">
             Готовы интегрировать?
           </h2>
-          <p className="mx-auto mt-3 max-w-xl font-light text-foreground/55">
+          <p className="mx-auto mt-3 max-w-xl font-light text-foreground/75">
             Создайте аккаунт разработчика, получите API-ключ и сделайте первый
             запрос за пару минут.
           </p>

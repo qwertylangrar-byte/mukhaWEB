@@ -29,7 +29,7 @@ export default async function DashboardPage() {
             <h1 className="text-2xl font-semibold text-foreground">
               Кабинет разработчика
             </h1>
-            <p className="text-sm text-foreground/60">{session.user.email}</p>
+            <p className="text-sm text-foreground/80">{session.user.email}</p>
           </div>
           <div className="flex items-center gap-2">
             <Link
