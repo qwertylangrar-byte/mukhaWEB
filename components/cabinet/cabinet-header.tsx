@@ -49,30 +49,33 @@ export function CabinetHeader({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[oklch(0.13_0.042_265/0.75)] shadow-[0_8px_32px_-16px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
-        <div className="flex items-center gap-6">
-          <Logo href="/shop" />
-          <nav
-            className="hidden items-center gap-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] p-1 md:flex"
-            aria-label={t.nav.sections}
-          >
-            {nav.map((item) => (
+    <header className="fixed inset-x-0 top-4 z-50 px-3">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-2 rounded-2xl border border-white/[0.08] bg-[oklch(0.1_0.02_260/0.78)] pl-4 pr-2.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.9)] backdrop-blur-2xl">
+        <Logo href="/shop" />
+
+        <nav
+          className="hidden items-center gap-1 lg:flex"
+          aria-label={t.nav.sections}
+        >
+          {nav.map((item) => {
+            const active = pathname.startsWith(item.href)
+            return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition-colors',
-                  pathname.startsWith(item.href)
-                    ? 'bg-primary font-medium text-primary-foreground shadow-[0_0_16px_-4px] shadow-primary/60'
-                    : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground',
+                  'whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-white/[0.09] text-foreground'
+                    : 'text-foreground/70 hover:bg-white/[0.07] hover:text-foreground',
                 )}
               >
                 {item.label}
               </Link>
-            ))}
-          </nav>
-        </div>
+            )
+          })}
+        </nav>
 
         <div className="flex items-center gap-2">
           <Link
@@ -87,7 +90,7 @@ export function CabinetHeader({
               <Plus className="size-3.5" />
             </span>
           </Link>
-          <span className="hidden text-sm text-muted-foreground lg:block">
+          <span className="hidden text-sm text-muted-foreground xl:block">
             {firstName || (username ? `@${username}` : t.common.account)}
           </span>
           <LanguageSwitcher />
@@ -102,25 +105,29 @@ export function CabinetHeader({
         </div>
       </div>
 
-      {/* Mobile nav */}
+      {/* Mobile / tablet nav — a second floating pill with the sections */}
       <nav
-        className="fancy-scroll flex items-center gap-1 overflow-x-auto border-t border-border/40 px-4 py-2 md:hidden"
+        className="mx-auto mt-2 flex w-full max-w-6xl items-center gap-1 overflow-x-auto rounded-2xl border border-white/[0.08] bg-[oklch(0.1_0.02_260/0.78)] px-2 py-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.9)] backdrop-blur-2xl lg:hidden [&::-webkit-scrollbar]:hidden"
         aria-label={t.nav.sections}
       >
-        {nav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm',
-              pathname.startsWith(item.href)
-                ? 'bg-primary/15 font-medium text-primary'
-                : 'text-muted-foreground',
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {nav.map((item) => {
+          const active = pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                active
+                  ? 'bg-white/[0.09] text-foreground'
+                  : 'text-foreground/70 hover:bg-white/[0.07] hover:text-foreground',
+              )}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
       </nav>
     </header>
   )
