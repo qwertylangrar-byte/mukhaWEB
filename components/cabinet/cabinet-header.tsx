@@ -48,8 +48,9 @@ export function CabinetHeader({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[oklch(0.13_0.042_265/0.75)] shadow-[0_8px_32px_-16px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
+    <header className="sticky top-0 z-50 px-3 pt-3">
+      <div className="mx-auto max-w-6xl rounded-2xl border border-white/[0.08] bg-[oklch(0.1_0.02_260/0.78)] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.9)] backdrop-blur-2xl">
+        <div className="flex h-14 items-center justify-between gap-4 px-4 md:px-5">
         <div className="flex items-center gap-6">
           <Logo href="/shop" />
           <nav
@@ -99,28 +100,29 @@ export function CabinetHeader({
             <LogOut className="size-4" />
           </Button>
         </div>
-      </div>
+        </div>
 
-      {/* Mobile nav */}
-      <nav
-        className="fancy-scroll flex items-center gap-1 overflow-x-auto border-t border-border/40 px-4 py-2 md:hidden"
-        aria-label={t.nav.sections}
-      >
-        {nav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm',
-              pathname.startsWith(item.href)
-                ? 'bg-primary/15 font-medium text-primary'
-                : 'text-muted-foreground',
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+        {/* Mobile nav */}
+        <nav
+          className="fancy-scroll flex items-center gap-1 overflow-x-auto border-t border-white/[0.06] px-4 py-2 md:hidden"
+          aria-label={t.nav.sections}
+        >
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm',
+                pathname.startsWith(item.href)
+                  ? 'bg-primary/15 font-medium text-primary'
+                  : 'text-muted-foreground',
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
     </header>
   )
 }
