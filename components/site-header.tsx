@@ -11,7 +11,7 @@ export function SiteHeader() {
   const { t } = useLang()
   return (
     <header className="fixed inset-x-0 top-4 z-50 px-3">
-      <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-2 rounded-2xl border border-white/[0.08] bg-[oklch(0.1_0.02_260/0.78)] pl-4 pr-2.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.9)] backdrop-blur-2xl">
+      <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-2 rounded-2xl border border-white/[0.08] bg-[oklch(0.1_0.02_260/0.78)] pl-4 pr-2.5 backdrop-blur-2xl">
         <Logo />
 
         <nav
