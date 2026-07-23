@@ -25,7 +25,7 @@ function getApiKey(): string {
   if (!key) {
     throw new GmtError(
       503,
-      'GetMyTG API не настроен. Добавьте переменную окружения GETMYTG_API_KEY.',
+      'Сервис провайдера не настроен. Обратитесь к администратору.',
     )
   }
   return key
@@ -129,11 +129,11 @@ async function gmtFetch<T>(
     if (timedOut) {
       throw new GmtError(
         504,
-        `GetMyTG API не ответил за ${Math.round(timeoutMs / 1000)} с (${init.method ?? 'GET'} ${path}).`,
+        `Провайдер не ответил за ${Math.round(timeoutMs / 1000)} с (${init.method ?? 'GET'} ${path}).`,
       )
     }
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e)
-    throw new GmtError(503, `Не удалось связаться с GetMyTG API (${detail}).`)
+    throw new GmtError(503, `Не удалось связаться с провайдером (${detail}).`)
   } finally {
     clearTimeout(timer)
   }
@@ -146,10 +146,12 @@ async function gmtFetch<T>(
   }
 
   if (!res.ok) {
-    const message =
+    const raw =
       (typeof data.error === 'string' && data.error) ||
       (typeof data.message === 'string' && data.message) ||
-      `Ошибка GetMyTG API (${res.status})`
+      `Ошибка провайдера (${res.status})`
+    // Never leak the upstream provider's name to end users.
+    const message = raw.replace(/get\s?my\s?tg/gi, 'провайдер')
     throw new GmtError(res.status, message)
   }
 

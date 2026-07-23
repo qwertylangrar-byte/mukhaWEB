@@ -33,6 +33,7 @@ function mapBridgePurchase(p: Record<string, unknown>) {
       : 'single'
   const bulkId =
     p.bulkPurchaseId ?? p.bulk_purchase_id ?? p.bulkId ?? p.bulk_id ?? null
+  const rawArchive = typeof p.archiveUrl === 'string' ? p.archiveUrl : null
   return {
     id: p.id,
     phoneNumber: p.phoneNumber ?? p.phone_number ?? null,
@@ -43,7 +44,12 @@ function mapBridgePurchase(p: Record<string, unknown>) {
     createdAt: p.createdAt ?? p.created_at ?? null,
     type,
     quantity,
-    archiveUrl: typeof p.archiveUrl === 'string' ? p.archiveUrl : null,
+    // Hide the upstream provider's domain behind our own download proxy.
+    archiveUrl: rawArchive
+      ? bulkId != null
+        ? `/api/download/${bulkId}`
+        : rawArchive
+      : null,
     bulkPurchaseId:
       typeof bulkId === 'string' || typeof bulkId === 'number' ? bulkId : null,
     code: p.verificationCode ?? null,
@@ -117,17 +123,24 @@ const handlers: Record<string, Handler> = {
     return {
       bulkPurchaseId: res.bulkPurchaseId,
       status: res.status,
-      archiveUrl: res.archiveUrl ?? null,
+      archiveUrl:
+        res.archiveUrl && res.bulkPurchaseId != null
+          ? `/api/download/${res.bulkPurchaseId}`
+          : (res.archiveUrl ?? null),
       balance: res.balance ?? null,
     }
   },
 
   'bulk-status': async (telegramId, body) => {
-    const res = (await bridge.bulkStatus(
-      telegramId,
-      asId(body.bulkPurchaseId),
-    )) as { status?: string; archiveUrl?: string | null }
-    return { status: res.status, archiveUrl: res.archiveUrl ?? null }
+    const bulkId = asId(body.bulkPurchaseId)
+    const res = (await bridge.bulkStatus(telegramId, bulkId)) as {
+      status?: string
+      archiveUrl?: string | null
+    }
+    return {
+      status: res.status,
+      archiveUrl: res.archiveUrl ? `/api/download/${bulkId}` : null,
+    }
   },
 
   history: async (telegramId) => {

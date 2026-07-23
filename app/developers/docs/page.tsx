@@ -22,7 +22,7 @@ export default async function DocsPage() {
           <h1 className="text-3xl font-semibold text-foreground">
             Документация API
           </h1>
-          <p className="mt-2 text-foreground/60">
+          <p className="mt-2 text-foreground/80">
             Всё, что нужно для интеграции покупки Telegram-аккаунтов.
           </p>
         </div>

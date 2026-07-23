@@ -57,7 +57,7 @@ export function CodeBlock({
                 'whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium transition-colors',
                 i === active
                   ? 'text-foreground'
-                  : 'text-foreground/50 hover:text-foreground/80',
+                  : 'text-foreground/70 hover:text-foreground/80',
               )}
             >
               {tab.label}
@@ -67,7 +67,7 @@ export function CodeBlock({
         <button
           type="button"
           onClick={copy}
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-foreground/60 transition-colors hover:bg-white/[0.06] hover:text-foreground"
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-white/[0.06] hover:text-foreground"
           aria-label="Copy code"
         >
           {copied ? (

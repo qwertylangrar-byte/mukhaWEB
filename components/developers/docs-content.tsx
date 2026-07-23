@@ -57,14 +57,14 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
     <div className="mx-auto flex max-w-6xl gap-10 px-4">
       {/* Sidebar */}
       <aside className="sticky top-28 hidden h-[calc(100vh-8rem)] w-56 shrink-0 overflow-y-auto py-2 lg:block">
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1 rounded-2xl bg-background/70 p-2 backdrop-blur-sm">
           {SECTIONS.map((s) => (
             <a
               key={s.id}
               href={`#${s.id}`}
               className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${active === s.id
                   ? 'bg-primary/15 font-medium text-primary'
-                  : 'text-foreground/60 hover:bg-white/[0.05] hover:text-foreground'
+                  : 'text-foreground/80 hover:bg-white/[0.05] hover:text-foreground'
                 }`}
             >
               {s.title}
@@ -110,7 +110,7 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs text-foreground/50">
+              <thead className="text-xs text-foreground/70">
                 <tr>
                   <th className="pb-2 font-medium">Уровень</th>
                   <th className="pb-2 font-medium">Порог трат</th>
@@ -125,7 +125,7 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
               </tbody>
             </table>
           </div>
-          <p className="text-sm text-foreground/50">
+          <p className="text-sm text-foreground/70">
             Скидка применяется к финальной цене автоматически. Актуальные цены
             всегда возвращает эндпоинт каталога.
           </p>
@@ -153,7 +153,7 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
           />
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs text-foreground/50">
+              <thead className="text-xs text-foreground/70">
                 <tr>
                   <th className="pb-2 font-medium">Код</th>
                   <th className="pb-2 font-medium">Значение</th>
@@ -301,7 +301,7 @@ export function DocsContent({ baseUrl }: { baseUrl: string }) {
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs text-foreground/50">
+              <thead className="text-xs text-foreground/70">
                 <tr>
                   <th className="pb-2 font-medium">HTTP</th>
                   <th className="pb-2 font-medium">Статус</th>
@@ -547,7 +547,7 @@ curl -L ${baseUrl}/api/v1/bulk/blk_xxx/download \\
   }
 }`}
           />
-          <p className="text-sm text-foreground/50">
+          <p className="text-sm text-foreground/70">
             События: purchase.created, code.received, purchase.refunded,
             bulk.created.
           </p>

@@ -50,7 +50,8 @@ export function serializePurchase(row: any): PublicPurchase {
     status: row.status,
     code: row.code ?? null,
     password: row.twoFaPassword ?? null,
-    archive_url: row.archiveUrl ?? null,
+    // Never expose the upstream provider's domain — always our own proxy.
+    archive_url: row.archiveUrl ? `/api/v1/bulk/${row.id}/download` : null,
     created_at:
       row.createdAt instanceof Date
         ? row.createdAt.toISOString()
