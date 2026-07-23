@@ -43,7 +43,7 @@ export function DevAuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       <h1 className="text-2xl font-light tracking-tight">
         {isSignUp ? 'Регистрация разработчика' : 'Вход для разработчиков'}
       </h1>
-      <p className="mt-1.5 text-sm font-light text-foreground/55">
+      <p className="mt-1.5 text-sm font-light text-foreground/75">
         {isSignUp
           ? 'Создайте аккаунт, чтобы получить API-ключ и баланс.'
           : 'Войдите, чтобы управлять ключами и балансом.'}
@@ -96,7 +96,7 @@ export function DevAuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </Button>
       </form>
 
-      <p className="mt-5 text-center text-sm font-light text-foreground/55">
+      <p className="mt-5 text-center text-sm font-light text-foreground/75">
         {isSignUp ? (
           <>
             Уже есть аккаунт?{' '}
@@ -129,12 +129,12 @@ function Field({
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
   return (
     <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 focus-within:border-white/[0.2]">
-      <span className="text-foreground/40">{icon}</span>
+      <span className="text-foreground/60">{icon}</span>
       <input
         {...props}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/35"
+        className="h-11 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/50"
       />
     </div>
   )
