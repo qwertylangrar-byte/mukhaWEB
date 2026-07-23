@@ -29,11 +29,6 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] [background-size:44px_44px]"
-        />
-
         {/* Floating 3D decor */}
         <Image
           src="/decor-keycap.png"
@@ -220,7 +215,7 @@ function StepCard({
       <span className="absolute -top-3 left-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 text-sm font-medium text-white shadow-lg">
         {index}
       </span>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 transition-transform duration-300 group-hover:-translate-y-1">
         <Image
           src={image || '/placeholder.svg'}
           alt=""
