@@ -38,6 +38,7 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-success: var(--success);
+  --font-serif: 'Unbounded', 'Unbounded Fallback', sans-serif;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

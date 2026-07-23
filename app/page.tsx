@@ -54,7 +54,7 @@ export default function HomePage() {
 
         <div className="relative mx-auto max-w-6xl px-4 pt-36 pb-8 md:px-6 md:pt-44">
           <div className="flex flex-col items-center text-center">
-            <h1 className="max-w-4xl text-balance text-5xl font-extralight leading-[1.05] tracking-tight md:text-7xl">
+            <h1 className="max-w-4xl text-balance font-serif text-4xl font-extralight leading-[1.15] tracking-tight md:text-6xl">
               {t.landing.heroTitle1}
               <br />
               <span className="bg-gradient-to-b from-foreground to-foreground/50 bg-clip-text text-transparent">
