@@ -36,12 +36,12 @@ export default function HomePage() {
 
         {/* Floating 3D decor */}
         <Image
-          src="/decor-plane.png"
+          src="/decor-keycap.png"
           alt=""
           aria-hidden="true"
-          width={220}
-          height={220}
-          className="pointer-events-none absolute right-4 top-24 w-28 rotate-6 opacity-90 mix-blend-screen drop-shadow-[0_20px_40px_rgba(56,132,255,0.35)] md:right-24 md:top-28 md:w-40"
+          width={280}
+          height={280}
+          className="pointer-events-none absolute right-2 top-20 w-32 rotate-6 opacity-95 mix-blend-screen [mask-image:radial-gradient(closest-side,#000_55%,transparent_78%)] md:right-16 md:top-24 md:w-48"
         />
         <Image
           src="/decor-cube.png"
