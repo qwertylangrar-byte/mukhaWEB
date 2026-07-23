@@ -68,35 +68,21 @@ export default function HomePage() {
 
           {/* Step cards */}
           <div className="mt-16 grid gap-x-5 gap-y-10 sm:grid-cols-3">
-            <StepCard index={1} image="/sky-1.png" label={t.landing.stepChoose}>
-              <span className="rounded-2xl bg-white px-6 py-3.5 text-sm font-semibold text-neutral-900 shadow-[0_10px_30px_-6px_rgba(0,0,0,0.5)]">
-                {t.landing.buyAccount}
-              </span>
-            </StepCard>
-
-            <StepCard index={2} image="/sky-2.png" label={t.landing.stepGetCode}>
-              <div className="flex gap-2.5">
-                {['4', '*', '*', '1'].map((ch, i) => (
-                  <span
-                    key={i}
-                    className="flex size-12 items-center justify-center rounded-2xl bg-white text-2xl font-bold text-neutral-900 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)]"
-                  >
-                    {ch}
-                  </span>
-                ))}
-              </div>
-            </StepCard>
-
-            <StepCard index={3} image="/sky-3.png" label={t.landing.stepUse}>
-              <span className="inline-flex items-center gap-2 rounded-3xl rounded-bl-md bg-white px-6 py-5 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)]">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="size-2.5 rounded-full bg-neutral-400"
-                  />
-                ))}
-              </span>
-            </StepCard>
+            <StepCard
+              index={1}
+              image="/step-buy.png"
+              label={t.landing.stepChoose}
+            />
+            <StepCard
+              index={2}
+              image="/step-code.png"
+              label={t.landing.stepGetCode}
+            />
+            <StepCard
+              index={3}
+              image="/step-use.png"
+              label={t.landing.stepUse}
+            />
           </div>
 
           <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -224,19 +210,17 @@ function StepCard({
   index,
   image,
   label,
-  children,
 }: {
   index: number
   image: string
   label: string
-  children: React.ReactNode
 }) {
   return (
     <div className="group relative">
       <span className="absolute -top-3 left-3 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-neutral-900 text-sm font-medium text-white shadow-lg">
         {index}
       </span>
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover:-translate-y-1">
         <Image
           src={image || '/placeholder.svg'}
           alt=""
@@ -244,11 +228,6 @@ function StepCard({
           sizes="(max-width: 640px) 100vw, 33vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
-        />
-        <div className="relative">{children}</div>
       </div>
       <p className="mt-4 pl-1 text-base font-light text-foreground/90">
         {label}
